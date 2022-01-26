@@ -17,6 +17,7 @@
   /***** default styles*******************************************/
   
   body {
+    -webkit-text-size-adjust: 100%;
     font-size: 13px;
     *font-size: small;
     /* IE7 */
@@ -37,6 +38,7 @@
   }
   
   body {
+    -webkit-text-size-adjust: 100%;
     text-align: center;
     color: #333333;
     margin: 0 auto;
@@ -170,6 +172,12 @@
     margin: var(--main-padding);
     line-height: 1.9;
   }
+  #main_table {
+    letter-spacing: 0.1em;
+    font-size: 110%;
+    margin: 0;
+    line-height: 1.9;
+  }
   
   #main ul {
     margin: 0 5px 5px 0;
@@ -231,6 +239,7 @@
   
   table th,
   table td {
+    word-wrap: break-word;
     padding: 1em 10px 1em 1em;
     border-right: 1px solid #bbb;
     text-align: center;
