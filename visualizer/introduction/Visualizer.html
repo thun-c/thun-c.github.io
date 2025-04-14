@@ -49,6 +49,7 @@
 
   <p>
     問題文は <a href="https://atcoder.jp/contests/intro-heuristics/tasks/intro_heuristics_a">こちら</a><br>
+    AHCで一般的な形式の非公式ローカルテスタは<a href="tools_intro.zip">こちら</a> ←<b>AHCに慣れるなら公式よりこれを使うことがオススメです</b><br>
     公式解説は <a
       href="https://img.atcoder.jp/intro-heuristics/editorial.pdf?_gl=1*15hcgab*_ga*Njg0MDYzNTgxLjE3MjA4NzI5NDk.*_ga_RC512FD18N*MTc0NDU1NDA4NS4zOTguMS4xNzQ0NTU0NDg0LjAuMC4w">こちら</a><br>
     thunderによる延長戦(提出時点で1位)解説は<a href="https://qiita.com/thun-c/items/fd82d1fb8131746bd347">こちら</a>
@@ -56,7 +57,7 @@
   <h2>使い方</h2>
   <details open="">
     <p>
-      Seed 欄に Seed 番号を入力するか、矢印で値を変更すると、対応するseedの入力が Input 欄に読み込まれます (xxxx は Seed 番号を4桁ゼロ埋めしたもの)。<br>
+      Seed 欄に Seed 番号を入力するか、矢印で値を変更すると、対応するseedの入力が Input 欄に読み込まれます<br>
       または、Input 欄に直接入力データを貼り付けることも可能です。<br>
       Output 欄にあなたのプログラムの出力 (各日のコンテストタイプ t) を貼り付けてください。<br>
       入力または出力が変更されると、ビジュアライザとスコアが自動的に更新されます。（<b>※片方だけでも変更があれば更新されます</b>）<br>
@@ -74,8 +75,17 @@
 
   <p>
     <label>
-      Seed:
-      <input type="number" id="seed" value="0" min="0" onchange="loadInputBySeed()">
+      公式Seed:
+      <input type="number" id="official-seed" value="0" min="0" onchange="loadInputBySeed('official')">
+      公式ツールのgenerator.pyで生成する時のseedに対応(0~99の範囲外だとどうなるかわかりません)
+    </label>
+  </p>
+
+  <p>
+    <label>
+      非公式Seed:
+      <input type="number" id="unofficial-seed" value="0" min="0" onchange="loadInputBySeed('unofficial')">
+      非公式ツールのgenで生成する時のseedに対応(0~99の範囲外だとどうなるかわかりません) <b>最初は非公式側</b>が読み込まれます。
     </label>
   </p>
   <p>
@@ -403,10 +413,48 @@ t_D" oninput="updateVisualization()"></textarea>
     }
 
     // --- Seed 番号に基づいて入力ファイルを読み込む関数 ---
-    async function loadInputBySeed() {
-      const seedValue = document.getElementById("seed").value;
+    async function loadInputBySeed(seedType) { // 引数 seedType を追加
+      let seedElementId, directory, labelId;
+      const officialLabel = document.querySelector('label[for="official-seed"]'); // 公式Seedラベルを取得
+      const unofficialLabel = document.querySelector('label[for="unofficial-seed"]'); // 非公式Seedラベルを取得
+      const officialInput = document.getElementById('official-seed');
+      const unofficialInput = document.getElementById('unofficial-seed');
+
+      // ラベルと入力欄のスタイルをリセット
+      if (officialLabel) officialLabel.style.backgroundColor = '';
+      if (unofficialLabel) unofficialLabel.style.backgroundColor = '';
+      if (officialInput) officialInput.style.backgroundColor = '';
+      if (unofficialInput) unofficialInput.style.backgroundColor = '';
+
+
+      if (seedType === 'official') {
+        seedElementId = 'official-seed';
+        directory = 'in'; // 公式Seed用のディレクトリ
+        labelId = 'official-seed'; // 対応するラベル/入力欄のID
+      } else if (seedType === 'unofficial') {
+        seedElementId = 'unofficial-seed';
+        directory = 'thunder_in'; // 非公式Seed用のディレクトリ
+        labelId = 'unofficial-seed'; // 対応するラベル/入力欄のID
+      } else {
+        console.error("Invalid seed type:", seedType);
+        return; // 不明なタイプの場合は何もしない
+      }
+
+      const seedElement = document.getElementById(seedElementId);
+      const seedValue = seedElement.value;
       const inputTextArea = document.getElementById("input");
       const scoreElement = document.getElementById("score"); // スコア表示もリセットするため
+
+      // 他方のSeed入力欄の値をクリアする（任意）
+      // const otherSeedId = seedType === 'official' ? 'unofficial-seed' : 'official-seed';
+      // document.getElementById(otherSeedId).value = ''; // 必要であればコメント解除
+
+      // 読み込み試行前にスタイルを適用（成功・失敗に関わらずどちらが選択されたかを示す）
+      const targetLabel = document.querySelector(`label[for="${labelId}"]`);
+      const targetInput = document.getElementById(labelId);
+      if (targetLabel) targetLabel.style.backgroundColor = '#e0e0ff'; // 薄い青色でハイライト
+      if (targetInput) targetInput.style.backgroundColor = '#e0e0ff'; // 入力欄もハイライト
+
 
       if (seedValue === "" || isNaN(seedValue) || seedValue < 0) {
         // 無効な Seed の場合、Input欄をエラーメッセージで上書き
@@ -418,7 +466,7 @@ t_D" oninput="updateVisualization()"></textarea>
 
       const seedInt = parseInt(seedValue, 10);
       const fileName = String(seedInt).padStart(4, '0'); // 4桁ゼロ埋め
-      const filePath = `in/${fileName}.txt`; // Visualizer.htmlからの相対パス (環境に応じて '../in/' などに変更)
+      const filePath = `${directory}/${fileName}.txt`; // 選択されたディレクトリを使用
 
       try {
         const response = await fetch(filePath);
@@ -442,8 +490,8 @@ t_D" oninput="updateVisualization()"></textarea>
     }
     // --- ここまで ---
 
-    // Initial load with default seed (e.g., 0)
-    loadInputBySeed(); // ページ読み込み時に Seed 0 のファイルを読み込む試み
+    // Initial load with default seed (unofficial seed 0)
+    loadInputBySeed('unofficial'); // ページ読み込み時に非公式 Seed 0 のファイルを読み込む試み
 
   </script>
 
