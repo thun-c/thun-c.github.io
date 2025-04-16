@@ -103,36 +103,60 @@
     </main>
 
     <footer>
-        <p>&copy; 2024 Thunder</p>
+        <p>&copy; 2023 Thunder</p>
     </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const headerBackground = document.getElementById('header-background');
-            const cards = document.querySelectorAll('.card a');
-            let initialBgImage = headerBackground.style.backgroundImage;
-            let initialOpacity = headerBackground.style.opacity || '0';
+            const cardLinks = document.querySelectorAll('.card a');
+            const cardContainer = document.querySelector('.card-container');
+            const cards = document.querySelectorAll('.card'); // 全てのカードを取得
 
-            cards.forEach(cardLink => {
-                const imageUrl = cardLink.dataset.bgImage;
+            // 画像プリロード (任意)
+            const imageUrls = Array.from(cardLinks).map(link => link.dataset.bgImage);
+            imageUrls.forEach(url => {
+                const img = new Image();
+                img.src = url;
+            });
 
-                if (imageUrl) {
-                    const img = new Image();
-                    img.src = imageUrl;
-                }
-
-                cardLink.addEventListener('mouseenter', () => {
-                    if (imageUrl) {
-                        headerBackground.style.backgroundImage = `url('${imageUrl}')`;
+            // ヘッダー背景変更のイベントリスナー (変更なし)
+            cardLinks.forEach(link => {
+                link.addEventListener('mouseenter', () => {
+                    const bgImage = link.dataset.bgImage;
+                    if (bgImage) {
+                        headerBackground.style.backgroundImage = `url(${bgImage})`;
                         headerBackground.style.opacity = '1';
                     }
                 });
 
-                cardLink.addEventListener('mouseleave', () => {
-                    headerBackground.style.backgroundImage = initialBgImage;
-                    headerBackground.style.opacity = initialOpacity;
+                link.addEventListener('mouseleave', () => {
+                    headerBackground.style.opacity = '0';
+                    // 少し遅れて背景画像を消す (オプション)
+                    // setTimeout(() => {
+                    //     headerBackground.style.backgroundImage = 'none';
+                    // }, 500); // transitionの時間に合わせる
                 });
             });
+
+            // --- カードホバー時のクラス制御を修正 ---
+            // 各カード要素にイベントリスナーを設定
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    // マウスがカードに乗ったらコンテナにクラスを追加
+                    if (cardContainer) {
+                        cardContainer.classList.add('card-is-hovered');
+                    }
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    // マウスがカードから離れたらコンテナからクラスを削除
+                    if (cardContainer) {
+                        cardContainer.classList.remove('card-is-hovered');
+                    }
+                });
+            });
+            // --- ここまで修正 ---
         });
     </script>
 

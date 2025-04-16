@@ -236,8 +236,8 @@ header h1 {
     /* ホバー時にテキストを表示 */
 }
 
-/* --- コンテナホバー時に、ホバーされていないカードを半透明にする --- */
-.card-container:hover>.card:not(:hover) {
+/* --- コンテナに 'card-is-hovered' クラスが付いた場合に、ホバーされていないカードを半透明にする --- */
+.card-container.card-is-hovered>.card:not(:hover) {
     opacity: 0.4;
     /* 半透明にする (値は調整可) */
 }
