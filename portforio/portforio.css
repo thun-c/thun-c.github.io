@@ -89,153 +89,160 @@ header h1 {
     /* ヘッダー分のスペースは維持 */
 
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 2rem;
-    padding-left: 2rem;
-    padding-right: 2rem;
-    padding-bottom: 3rem;
-    max-width: 1400px;
+    /* --- カラム幅をさらに小さく --- */
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    /* min値を小さく */
+    /* --- ここまで --- */
+    gap: 6rem;
+    /* gapを広げる */
+    /* --- ここまで --- */
+    padding-left: 6rem;
+    /* gapに合わせて調整 */
+    padding-right: 6rem;
+    /* gapに合わせて調整 */
+    padding-bottom: 6rem;
+    max-width: 1200px;
     margin: 0 auto;
 
-    /* --- コンテンツがヘッダーより上に来るように設定 --- */
     position: relative;
-    /* z-index を有効にするため */
     z-index: 10;
-    /* header(1) より高く */
-    /* --- 背景色を削除！ --- */
-    /* background-color: #ffffff; */
-    /* ここを削除または transparent に */
-    /* --- ここまで --- */
+    /* background-color: transparent; */
+    /* 背景は透明のまま */
 }
 
 /* カード共通スタイル */
 .card {
-    /* --- カード自体に背景色を設定 --- */
     background-color: #ffffff;
-    /* カードの背景は白 */
-    /* --- ここまで --- */
     border: 1px solid #eee;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     border-radius: 4px;
     overflow: hidden;
     position: relative;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    /* --- 正方形にする --- */
+    aspect-ratio: 1 / 1;
+    /* --- ここまで --- */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease-in-out;
 }
 
 .card a {
+    display: flex;
+    /* Flexbox を使用 */
+    flex-direction: column;
+    /* 縦方向に配置 */
+    justify-content: center;
+    /* 垂直方向中央揃え */
+    align-items: center;
+    /* 水平方向中央揃え */
+    width: 100%;
+    height: 100%;
+    /* 親要素いっぱいに広げる */
+    padding: 1rem;
+    /* 内側の余白 */
     text-decoration: none;
     color: inherit;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 1.5rem;
-    height: 200px;
+    position: relative;
+    /* テキストの絶対配置基準 */
     box-sizing: border-box;
-    position: relative;
+    /* paddingを含めてサイズ計算 */
 }
 
-.card h3 {
-    margin: 0;
-    font-family: 'Noto Serif JP', serif;
-    color: #111;
-    font-size: 1.3rem;
-    font-weight: 500;
-    line-height: 1.4;
-}
-
-.card p {
-    margin: 0;
-    font-size: 0.8rem;
-    color: #555;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    position: absolute;
-    bottom: 1.5rem;
-    left: 1.5rem;
-    right: 1.5rem;
-    /* 右端も指定して折り返しに対応 */
-    pointer-events: none;
-    /* 下の要素をクリックできるように */
-}
-
-.card:hover {
-    background-color: #f9f9f9;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
-}
-
-.card:hover p {
-    opacity: 1;
-}
-
-/* 画像付きカード */
-.card-with-image {
-    border: none;
-    /* 画像カードは枠線なし */
-    box-shadow: none;
-    /* 画像カードは影なし */
-}
-
-.card-with-image a {
-    padding: 0;
-    /* 画像カードはpaddingなし */
-    height: 250px;
-    /* 画像カードの高さを少し調整 */
+/* カードアイコンのスタイル */
+.card-icon {
     display: block;
-    /* FlexではなくBlockに */
-    position: relative;
-    background-size: cover;
-    background-position: center;
+    width: 40%;
+    /* カード幅に対する割合で指定 (調整可) */
+    max-width: 80px;
+    /* 最大幅を指定 (調整可) */
+    height: auto;
+    opacity: 1;
+    /* 通常時は表示 */
+    transition: opacity 0.3s ease-in-out;
 }
 
-.card-with-image h3,
-.card-with-image p {
-    position: absolute;
-    /* テキストを絶対配置 */
-    left: 1.5rem;
-    right: 1.5rem;
-    color: #ffffff;
-    z-index: 2;
-    /* オーバーレイより手前 */
+/* カードタイトル */
+.card h3 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 1.2rem;
+    /* サイズ調整 */
+    font-weight: 500;
+    margin: 0 0 0.5rem 0;
+    /* 下に少しマージン */
+    color: #333;
+    /* --- ホバー時表示のための設定 --- */
     opacity: 0;
     /* 通常時は非表示 */
-    transition: opacity 0.4s ease;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-}
-
-.card-with-image h3 {
-    bottom: 3.5rem;
-    /* 位置調整 */
-    font-size: 1.5rem;
-    /* 少し大きく */
-}
-
-.card-with-image p {
-    bottom: 1.5rem;
-    /* 位置調整 */
-    font-size: 0.9rem;
-}
-
-/* 画像カードのオーバーレイ */
-.card-with-image .card-overlay {
     position: absolute;
-    top: 0;
+    /* アイコンと重ならないように絶対配置 */
+    top: 50%;
+    /* 中央から配置開始 */
     left: 0;
     right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0);
-    z-index: 1;
-    transition: background-color 0.4s ease;
-    border-radius: 4px;
+    transform: translateY(-70%);
+    /* 上にずらして中央に */
+    text-align: center;
+    /* 中央揃え */
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none;
+    /* テキスト自体はクリックさせない */
+    /* --- ここまで --- */
 }
 
-.card-with-image:hover .card-overlay {
-    background-color: rgba(0, 0, 0, 0.75);
+/* カード説明文 */
+.card p {
+    font-size: 0.85rem;
+    /* サイズ調整 */
+    color: #666;
+    margin: 0;
+    line-height: 1.4;
+    /* --- ホバー時表示のための設定 --- */
+    opacity: 0;
+    /* 通常時は非表示 */
+    position: absolute;
+    /* アイコンと重ならないように絶対配置 */
+    top: 50%;
+    /* 中央から配置開始 */
+    left: 1rem;
+    /* 左右に余白 */
+    right: 1rem;
+    transform: translateY(30%);
+    /* 下にずらして中央に */
+    text-align: center;
+    /* 中央揃え */
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none;
+    /* テキスト自体はクリックさせない */
+    /* --- ここまで --- */
 }
 
-.card-with-image:hover h3,
-.card-with-image:hover p {
+/* カードホバー時のスタイル */
+.card:hover {
+    background-color: #f9f9f9;
+    /* 背景色を少し変える */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    /* --- ホバーされたカードは不透明のまま --- */
     opacity: 1;
+    /* 明示的に指定 */
+    /* --- ここまで --- */
 }
+
+.card:hover .card-icon {
+    opacity: 0;
+    /* ホバー時にアイコンを非表示 */
+}
+
+.card:hover h3,
+.card:hover p {
+    opacity: 1;
+    /* ホバー時にテキストを表示 */
+}
+
+/* --- コンテナホバー時に、ホバーされていないカードを半透明にする --- */
+.card-container:hover>.card:not(:hover) {
+    opacity: 0.4;
+    /* 半透明にする (値は調整可) */
+}
+
+/* --- ここまで --- */
 
 /* フッター */
 footer {
@@ -296,6 +303,37 @@ footer {
     }
 }
 
+@media (max-width: 992px) {
+    .card-container {
+        /* --- カラム幅調整 --- */
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        /* min値を小さく */
+        /* --- ここまで --- */
+        /* --- 隙間調整 --- */
+        gap: 2rem;
+        /* gap調整 */
+        /* --- ここまで --- */
+        padding-left: 2rem;
+        /* gapに合わせて調整 */
+        padding-right: 2rem;
+        /* gapに合わせて調整 */
+    }
+
+    .card h3 {
+        font-size: 1rem;
+        /* 親サイズに合わせて少し調整 */
+    }
+
+    .card p {
+        font-size: 0.75rem;
+        /* 親サイズに合わせて少し調整 */
+    }
+
+    .card-icon {
+        max-width: 60px;
+        /* 親サイズに合わせて少し調整 */
+    }
+}
 
 @media (max-width: 600px) {
     header {
@@ -308,62 +346,40 @@ footer {
 
     .card-container {
         padding-top: 6rem;
+        /* --- カラム設定変更 (3列に) --- */
+        grid-template-columns: repeat(3, 1fr);
+        /* スマホでは3列表示 */
+        /* --- ここまで --- */
+        /* --- 隙間調整 --- */
+        gap: 1.5rem;
+        /* gap調整 */
+        /* --- ここまで --- */
         padding-left: 1rem;
+        /* 左右paddingは維持 */
         padding-right: 1rem;
-        gap: 1rem;
-        grid-template-columns: 1fr;
     }
 
     .card a {
-        height: auto;
-        min-height: 100px;
-        padding: 1.5rem;
-        justify-content: flex-start;
+        padding: 0.5rem;
+    }
+
+    .card-icon {
+        max-width: 40px;
+        /* アイコンサイズ調整 */
+    }
+
+    .card h3 {
+        font-size: 0.8rem;
+        /* テキストサイズ調整 */
+        transform: translateY(-60%);
     }
 
     .card p {
-        position: relative;
-        bottom: auto;
-        left: auto;
-        right: auto;
-        opacity: 1;
-        margin-top: 0.5rem;
-        color: #555;
-        pointer-events: auto;
-        /* スマホではクリック可能に */
-    }
-
-    .card:hover {
-        background-color: #ffffff;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-    }
-
-    .card:hover p {
-        opacity: 1;
-    }
-
-    .card-with-image a {
-        height: 200px;
-        justify-content: flex-end;
-    }
-
-    .card-with-image .card-overlay {
-        background-color: rgba(0, 0, 0, 0.6);
-    }
-
-    .card-with-image h3,
-    .card-with-image p {
-        opacity: 1;
-    }
-
-    .card-with-image h3 {
-        font-size: 1.3rem;
-        bottom: 3rem;
-    }
-
-    .card-with-image p {
-        font-size: 0.8rem;
-        bottom: 1.2rem;
+        font-size: 0.65rem;
+        /* テキストサイズ調整 */
+        transform: translateY(40%);
+        left: 0.5rem;
+        right: 0.5rem;
     }
 
     /* スマホではヘッダー背景変更を無効化する場合 */
