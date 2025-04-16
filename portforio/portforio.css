@@ -116,42 +116,40 @@ header h1 {
     border: 1px solid #eee;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     border-radius: 4px;
-    overflow: hidden;
+    overflow: visible !important;
     position: relative;
-    /* --- 正方形にする --- */
-    aspect-ratio: 1 / 1;
-    /* --- ここまで --- */
     transition: background-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    /* 縦並び */
+    height: auto;
+    /* --- align-items を追加して、子要素のデフォルトの水平位置を制御 --- */
+    align-items: stretch;
+    /* 子要素をコンテナ幅に伸ばす (デフォルトに近いが明示) */
+    /* --- ここまで --- */
 }
 
 .card a {
-    display: flex;
-    /* Flexbox を使用 */
-    flex-direction: column;
-    /* 縦方向に配置 */
-    justify-content: center;
-    /* 垂直方向中央揃え */
-    align-items: center;
-    /* 水平方向中央揃え */
+    display: grid;
+    place-items: center;
     width: 100%;
-    height: 100%;
-    /* 親要素いっぱいに広げる */
-    padding: 1rem;
-    /* 内側の余白 */
+    aspect-ratio: 1 / 1;
     text-decoration: none;
     color: inherit;
     position: relative;
-    /* テキストの絶対配置基準 */
     box-sizing: border-box;
-    /* paddingを含めてサイズ計算 */
+    overflow: hidden;
+    flex-shrink: 0;
+    /* 縮まないように */
 }
 
 /* カードアイコンのスタイル */
 .card-icon {
     display: block;
-    width: 40%;
+    width: 100%;
     /* カード幅に対する割合で指定 (調整可) */
-    max-width: 80px;
+    max-width: 70%;
+    margin: 0 auto;
     /* 最大幅を指定 (調整可) */
     height: auto;
     opacity: 1;
@@ -161,79 +159,41 @@ header h1 {
 
 /* カードタイトル */
 .card h3 {
-    font-family: 'Noto Serif JP', serif;
-    font-size: 1.2rem;
-    /* サイズ調整 */
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.9rem;
     font-weight: 500;
-    margin: 0 0 0.5rem 0;
-    /* 下に少しマージン */
     color: #333;
-    /* --- ホバー時表示のための設定 --- */
-    opacity: 0;
-    /* 通常時は非表示 */
-    position: absolute;
-    /* アイコンと重ならないように絶対配置 */
-    top: 50%;
-    /* 中央から配置開始 */
-    left: 0;
-    right: 0;
-    transform: translateY(-70%);
-    /* 上にずらして中央に */
-    text-align: center;
-    /* 中央揃え */
-    transition: opacity 0.3s ease-in-out;
-    pointer-events: none;
-    /* テキスト自体はクリックさせない */
+    /* --- margin/padding で位置調整 --- */
+    margin: 0.5rem 0 0.2rem 0;
+    /* 上下のマージン */
+    padding: 0 0.5rem;
+    /* 左右にパディングを追加して左端からの距離を確保 */
     /* --- ここまで --- */
-}
-
-/* カード説明文 */
-.card p {
-    font-size: 0.85rem;
-    /* サイズ調整 */
-    color: #666;
-    margin: 0;
-    line-height: 1.4;
-    /* --- ホバー時表示のための設定 --- */
-    opacity: 0;
-    /* 通常時は非表示 */
-    position: absolute;
-    /* アイコンと重ならないように絶対配置 */
-    top: 50%;
-    /* 中央から配置開始 */
-    left: 1rem;
-    /* 左右に余白 */
-    right: 1rem;
-    transform: translateY(30%);
-    /* 下にずらして中央に */
-    text-align: center;
-    /* 中央揃え */
-    transition: opacity 0.3s ease-in-out;
-    pointer-events: none;
-    /* テキスト自体はクリックさせない */
+    opacity: 1 !important;
+    position: static !important;
+    /* 絶対配置ではないことを強調 */
+    transform: none;
+    display: block !important;
+    /* --- text-align を再度確認 --- */
+    text-align: left !important;
+    /* 強制的に左揃え */
     /* --- ここまで --- */
+    /* --- width と box-sizing を追加 --- */
+    width: 100%;
+    /* 親要素(.card)の幅いっぱいに広がるように */
+    box-sizing: border-box;
+    /* paddingを含めて幅を計算 */
+    /* --- ここまで --- */
+    pointer-events: auto;
+    /* background-color: yellow; */
+    /* デバッグ用 */
 }
 
 /* カードホバー時のスタイル */
 .card:hover {
     background-color: #f9f9f9;
-    /* 背景色を少し変える */
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-    /* --- ホバーされたカードは不透明のまま --- */
     opacity: 1;
-    /* 明示的に指定 */
-    /* --- ここまで --- */
-}
-
-.card:hover .card-icon {
-    opacity: 0;
-    /* ホバー時にアイコンを非表示 */
-}
-
-.card:hover h3,
-.card:hover p {
-    opacity: 1;
-    /* ホバー時にテキストを表示 */
 }
 
 /* --- コンテナに 'card-is-hovered' クラスが付いた場合に、ホバーされていないカードを半透明にする --- */
@@ -241,8 +201,6 @@ header h1 {
     opacity: 0.4;
     /* 半透明にする (値は調整可) */
 }
-
-/* --- ここまで --- */
 
 /* フッター */
 footer {
@@ -255,58 +213,22 @@ footer {
     border-top: 1px solid #eee;
 }
 
-/* レスポンシブ対応 */
-@media (max-width: 768px) {
-    header {
-        padding: 1.5rem 0;
-    }
-
-    #header-background {
-        height: 5.5rem;
-    }
-
-    .card-container {
-        padding-top: 7rem;
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
-        gap: 1.5rem;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    }
-
-    header h1 {
-        font-size: 1.3rem;
-    }
-
-    .card a {
-        height: 180px;
-        padding: 1.2rem;
-    }
-
-    .card p {
-        bottom: 1.2rem;
-        left: 1.2rem;
-        right: 1.2rem;
-    }
-
-    .card-with-image a {
-        height: 220px;
-    }
-
-    .card-with-image h3 {
-        font-size: 1.4rem;
-        bottom: 3rem;
-    }
-
-    .card-with-image p {
-        font-size: 0.8rem;
-        bottom: 1.2rem;
-    }
+/* Footer Social Links Icon Size */
+.social-links img {
+    height: 24px;
+    /* アイコンの高さを指定 (例: 24px) */
+    width: auto;
+    /* 幅は自動調整 */
+    margin: 0 5px;
+    /* アイコン間の左右に少し余白を追加 */
+    vertical-align: middle;
+    /* テキストとアイコンの垂直位置を中央揃えに */
 }
 
 @media (max-width: 992px) {
     .card-container {
         /* --- カラム幅調整 --- */
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
         /* min値を小さく */
         /* --- ここまで --- */
         /* --- 隙間調整 --- */
@@ -324,15 +246,6 @@ footer {
         /* 親サイズに合わせて少し調整 */
     }
 
-    .card p {
-        font-size: 0.75rem;
-        /* 親サイズに合わせて少し調整 */
-    }
-
-    .card-icon {
-        max-width: 60px;
-        /* 親サイズに合わせて少し調整 */
-    }
 }
 
 @media (max-width: 600px) {
@@ -363,32 +276,10 @@ footer {
         padding: 0.5rem;
     }
 
-    .card-icon {
-        max-width: 40px;
-        /* アイコンサイズ調整 */
-    }
 
     .card h3 {
         font-size: 0.8rem;
         /* テキストサイズ調整 */
         transform: translateY(-60%);
     }
-
-    .card p {
-        font-size: 0.65rem;
-        /* テキストサイズ調整 */
-        transform: translateY(40%);
-        left: 0.5rem;
-        right: 0.5rem;
-    }
-
-    /* スマホではヘッダー背景変更を無効化する場合 */
-    /*
-    #header-background {
-        display: none;
-    }
-    header h1 {
-        color: #111;
-    }
-    */
 }
