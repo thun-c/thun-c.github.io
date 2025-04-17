@@ -1,0 +1,237 @@
+/* 基本スタイル */
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    /* 日本語に適したフォント */
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    color: #333;
+    /* 基本の文字色 */
+    background-color: #f8f8f8;
+    /* 背景色を少しグレーに */
+}
+
+h1,
+h2,
+h3 {
+    font-family: 'Montserrat', sans-serif;
+    /* 見出しはMontserrat */
+    font-weight: 700;
+    /* 太字 */
+}
+
+a {
+    color: #A0522D;
+    /* リンクの色 (茶色系) */
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Heroセクション */
+.hero {
+    height: 100vh;
+    /* 画面の高さいっぱい */
+    display: flex;
+    flex-direction: column;
+    /* コンテンツを縦に並べる */
+    justify-content: center;
+    /* 中央揃え (垂直) */
+    align-items: center;
+    /* 中央揃え (水平) */
+    text-align: center;
+    background: url('https://via.placeholder.com/1920x1080/cccccc/333333?text=Background+Image+Here') no-repeat center center/cover;
+    /* 仮の背景画像 */
+    color: white;
+    position: relative;
+    /* スクロールアイコンの位置基準 */
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    /* 背景画像を少し暗くする */
+    z-index: 1;
+}
+
+.hero-content {
+    position: relative;
+    /* 文字をオーバーレイの上に表示 */
+    z-index: 2;
+}
+
+.hero h1 {
+    font-size: 3.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.hero p {
+    font-size: 1.5rem;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.scroll-down {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    font-size: 2rem;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+        transform: translate(-50%, 0);
+    }
+
+    40% {
+        transform: translate(-50%, -10px);
+    }
+
+    60% {
+        transform: translate(-50%, -5px);
+    }
+}
+
+
+/* メインコンテンツ */
+main {
+    max-width: 1200px;
+    margin: 40px auto;
+    /* 上下にマージン、左右は自動で中央寄せ */
+    padding: 0 20px;
+    /* 左右にパディング */
+}
+
+section {
+    margin-bottom: 60px;
+    /* 各セクションの下にマージン */
+}
+
+section h2 {
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 40px;
+    color: #333;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+/* セクションタイトルの下線 */
+section h2::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background-color: #A0522D;
+    /* アクセントカラー */
+}
+
+/* カードコンテナ */
+.card-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    /* レスポンシブなグリッドレイアウト */
+    gap: 30px;
+    /* カード間の隙間 */
+}
+
+/* カード */
+.card {
+    background-color: #fff;
+    /* カードの背景色 */
+    border-radius: 8px;
+    /* 角を丸める */
+    padding: 25px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    /* 控えめな影 */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    /* ホバー時のアニメーション */
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    /* 少し浮き上がる */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.card h3 {
+    font-size: 1.3rem;
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #A0522D;
+    /* カードタイトルの色 */
+}
+
+.card p {
+    margin-bottom: 10px;
+    color: #555;
+    /* カード本文の色 */
+}
+
+.card p:last-child {
+    margin-bottom: 0;
+}
+
+/* ダウンロードセクションのリンク */
+#downloads .card a {
+    font-weight: bold;
+}
+
+/* フッター */
+footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 60px;
+    background-color: #e0e0e0;
+    /* フッターの背景色 */
+    color: #555;
+}
+
+/* Font Awesome アイコン (例: Heroセクション) */
+.fas {
+    color: white;
+    /* デフォルトのアイコン色 */
+}
+
+/* モノクロアイコンが必要な場合 (例) */
+/* .some-icon-class {
+    filter: grayscale(100%);
+    opacity: 0.7; 
+} */
+
+/* レスポンシブ対応 (例: 画面幅が狭い場合) */
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .hero p {
+        font-size: 1.2rem;
+    }
+
+    section h2 {
+        font-size: 1.8rem;
+    }
+
+    .card-container {
+        grid-template-columns: 1fr;
+        /* 1列表示 */
+    }
+}
