@@ -42,8 +42,8 @@ a:hover {
     align-items: center;
     /* 中央揃え (水平) */
     text-align: center;
-    background: url('https://via.placeholder.com/1920x1080/cccccc/333333?text=Background+Image+Here') no-repeat center center/cover;
-    /* 仮の背景画像 */
+    background: url('img/background_top.png') no-repeat center center/cover;
+    /* 背景画像を差し替え */
     color: white;
     position: relative;
     /* スクロールアイコンの位置基準 */
