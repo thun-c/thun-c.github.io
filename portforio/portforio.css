@@ -1,4 +1,9 @@
 /* 基本スタイル */
+html {
+    scroll-behavior: smooth;
+    /* スムーズスクロール */
+}
+
 body {
     font-family: 'Noto Sans JP', sans-serif;
     /* 日本語に適したフォント */
@@ -7,8 +12,14 @@ body {
     line-height: 1.6;
     color: #333;
     /* 基本の文字色 */
-    background-color: #f8f8f8;
-    /* 背景色を少しグレーに */
+    /* background-color: #f8f8f8; */
+    /* 個別背景のためコメントアウト */
+    scroll-snap-type: y mandatory;
+    /* Y軸方向のスクロールスナップを強制 */
+    overflow-y: scroll;
+    /* 常に垂直スクロールバーを表示 (スナップに必要) */
+    height: 100vh;
+    /* bodyの高さを画面に合わせる */
 }
 
 h1,
@@ -30,23 +41,29 @@ a:hover {
     text-decoration: underline;
 }
 
-/* Heroセクション */
-.hero {
+/* Heroセクション & 各コンテンツセクション共通スタイル */
+.hero,
+main>section {
     height: 100vh;
-    /* 画面の高さいっぱい */
+    /* 各セクションを画面の高さいっぱいに */
+    scroll-snap-align: start;
+    /* スクロール時にセクション上端にスナップ */
     display: flex;
     flex-direction: column;
-    /* コンテンツを縦に並べる */
     justify-content: center;
-    /* 中央揃え (垂直) */
     align-items: center;
-    /* 中央揃え (水平) */
-    text-align: center;
-    background: url('img/background_top.png') no-repeat center center/cover;
-    /* 背景画像を差し替え */
-    color: white;
+    padding: 40px 20px;
+    box-sizing: border-box;
+    /* paddingを含めて高さを計算 */
     position: relative;
-    /* スクロールアイコンの位置基準 */
+    /* 子要素の位置基準 */
+    text-align: center;
+}
+
+/* Heroセクション個別スタイル */
+.hero {
+    background: url('img/background_top.png') no-repeat center center/cover;
+    color: white;
 }
 
 .hero::before {
@@ -106,24 +123,22 @@ a:hover {
     }
 }
 
-
-/* メインコンテンツ */
+/* メインコンテンツ (旧スタイル調整) */
 main {
-    max-width: 1200px;
-    margin: 40px auto;
-    /* 上下にマージン、左右は自動で中央寄せ */
-    padding: 0 20px;
-    /* 左右にパディング */
-}
-
-section {
-    margin-bottom: 60px;
-    /* 各セクションの下にマージン */
+    /* max-width: 1200px; */
+    /* 不要に */
+    /* margin: 40px auto; */
+    /* 不要に */
+    /* padding: 0 20px; */
+    /* 不要に */
 }
 
 section h2 {
     font-size: 2rem;
-    text-align: center;
+    /* text-align: center; */
+    /* 共通スタイルで設定済み */
+    margin-top: 0;
+    /* 上マージンリセット */
     margin-bottom: 40px;
     color: #333;
     position: relative;
@@ -143,26 +158,91 @@ section h2::after {
     /* アクセントカラー */
 }
 
+/* 各セクションの個別背景 (仮) */
+#writing {
+    background: url('img/background_book.png') no-repeat center center/cover;
+    background-color: #fdfaf6;
+    /* 淡いベージュ系 */
+}
+
+#speaking {
+    background: url('img/background_speaking.png') no-repeat center center/cover;
+    background-color: #f6f8fd;
+    /* 淡いブルー系 */
+}
+
+#awards {
+    background: url('img/background_awards.png') no-repeat center center/cover;
+    background-color: #f6fdf7;
+    /* 淡いグリーン系 */
+}
+
+#media {
+    background: url('img/background_media.png') no-repeat center center/cover;
+    background-color: #fffaf6;
+    /* 淡いオレンジ系 */
+}
+
+#internal-awards {
+    background: url('img/background_internal.png') no-repeat center center/cover;
+    background-color: #fdf6f6;
+    /* 淡いレッド系 */
+}
+
+#web-tools {
+    background-color: #faf6fd;
+    /* 淡いパープル系 */
+}
+
+#downloads {
+    background-color: #f8f8f8;
+    /* 元の背景色に近いグレー */
+}
+
+/* 各セクション内の色調整 (背景色によっては文字が見えにくくなるため) */
+main>section h2,
+main>section .card h3 {
+    color: #333;
+    /* 基本の濃い色に戻す (必要なら調整) */
+}
+
+main>section .card p {
+    color: #555;
+}
+
+main>section a {
+    color: #8B4513;
+    /* 少し濃い茶色 */
+}
+
 /* カードコンテナ */
 .card-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    /* レスポンシブなグリッドレイアウト */
     gap: 30px;
-    /* カード間の隙間 */
+    width: 100%;
+    /* 幅を100%に */
+    max-width: 1000px;
+    /* 最大幅を設定 */
+    margin: 0 auto;
+    /* 中央寄せ */
+    overflow-y: auto;
+    /* コンテンツが多い場合にカードコンテナ内をスクロール可能に */
+    max-height: calc(100vh - 150px);
+    /* ヘッダー等を考慮した高さ制限 (要調整) */
+    padding: 10px;
 }
 
 /* カード */
 .card {
-    background-color: #fff;
-    /* カードの背景色 */
+    background-color: rgba(255, 255, 255, 0.9);
+    /* 背景が透けるように少し透明度を持たせる */
     border-radius: 8px;
-    /* 角を丸める */
     padding: 25px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    /* 控えめな影 */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    /* ホバー時のアニメーション */
+    text-align: left;
+    /* カード内容は左揃え */
 }
 
 .card:hover {
@@ -175,14 +255,14 @@ section h2::after {
     font-size: 1.3rem;
     margin-top: 0;
     margin-bottom: 10px;
-    color: #A0522D;
-    /* カードタイトルの色 */
+    /* color: #A0522D; */
+    /* セクション共通スタイルで設定 */
 }
 
 .card p {
     margin-bottom: 10px;
-    color: #555;
-    /* カード本文の色 */
+    /* color: #555; */
+    /* セクション共通スタイルで設定 */
 }
 
 .card p:last-child {
@@ -196,12 +276,19 @@ section h2::after {
 
 /* フッター */
 footer {
+    /* scroll-snap-align: start; */
+    /* スナップさせない場合はコメントアウト */
+    /* height: 100px; */
+    /* 必要なら高さを指定 */
     text-align: center;
     padding: 20px;
-    margin-top: 60px;
+    /* margin-top: 60px; */
+    /* 不要に */
     background-color: #e0e0e0;
     /* フッターの背景色 */
     color: #555;
+    /* position: relative; */
+    /* スナップさせる場合は必要かも */
 }
 
 /* Font Awesome アイコン (例: Heroセクション) */
@@ -232,6 +319,7 @@ footer {
 
     .card-container {
         grid-template-columns: 1fr;
-        /* 1列表示 */
+        max-height: calc(100vh - 130px);
+        /* スマホ用に調整 */
     }
 }
