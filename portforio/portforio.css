@@ -62,7 +62,7 @@ main>section {
 
 /* Heroセクション個別スタイル */
 .hero {
-    background: url('img/background_top.png') no-repeat center center/cover;
+    background: url('img/backgrounds/background_top.png') no-repeat center center/cover;
     color: white;
 }
 
@@ -160,43 +160,43 @@ section h2::after {
 
 /* 各セクションの個別背景 (仮) */
 #writing {
-    background: url('img/background_book.png') no-repeat center center/cover;
+    background: url('img/backgrounds/background_book.png') no-repeat center center/cover;
     background-color: #fdfaf6;
     /* 淡いベージュ系 */
 }
 
 #speaking {
-    background: url('img/background_speaking.png') no-repeat center center/cover;
+    background: url('img/backgrounds/background_speaking.png') no-repeat center center/cover;
     background-color: #f6f8fd;
     /* 淡いブルー系 */
 }
 
 #awards {
-    background: url('img/background_awards.png') no-repeat center center/cover;
+    background: url('img/backgrounds/background_awards.png') no-repeat center center/cover;
     background-color: #f6fdf7;
     /* 淡いグリーン系 */
 }
 
 #media {
-    background: url('img/background_media.png') no-repeat center center/cover;
+    background: url('img/backgrounds/background_media.png') no-repeat center center/cover;
     background-color: #fffaf6;
     /* 淡いオレンジ系 */
 }
 
 #internal-awards {
-    background: url('img/background_internal.png') no-repeat center center/cover;
+    background: url('img/backgrounds/background_internal.png') no-repeat center center/cover;
     background-color: #fdf6f6;
     /* 淡いレッド系 */
 }
 
 #web-tools {
-    background: url('img/background_tools.png') no-repeat center center/cover;
+    background: url('img/backgrounds/background_tools.png') no-repeat center center/cover;
     background-color: #faf6fd;
     /* 淡いパープル系 */
 }
 
 #downloads {
-    background: url('img/background_downloads.png') no-repeat center center/cover;
+    background: url('img/backgrounds/background_downloads.png') no-repeat center center/cover;
     background-color: #f8f8f8;
     /* 元の背景色に近いグレー */
 }
