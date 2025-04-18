@@ -12,14 +12,8 @@ body {
     line-height: 1.6;
     color: #333;
     /* 基本の文字色 */
-    /* background-color: #f8f8f8; */
-    /* 個別背景のためコメントアウト */
-    scroll-snap-type: y mandatory;
-    /* Y軸方向のスクロールスナップを強制 */
-    overflow-y: scroll;
-    /* 常に垂直スクロールバーを表示 (スナップに必要) */
-    height: 100vh;
-    /* bodyの高さを画面に合わせる */
+    background-color: #f8f8f8;
+    /* 全体の背景色を再設定 (セクションごとの背景を使う場合は不要かも) */
 }
 
 h1,
@@ -44,26 +38,32 @@ a:hover {
 /* Heroセクション & 各コンテンツセクション共通スタイル */
 .hero,
 main>section {
-    height: 100vh;
-    /* 各セクションを画面の高さいっぱいに */
-    scroll-snap-align: start;
-    /* スクロール時にセクション上端にスナップ */
+    /* height: 100vh; */
+    /* セクションの高さを可変に */
+    /* scroll-snap-align: start; */
+    /* スクロールスナップ解除 */
     display: flex;
     flex-direction: column;
     justify-content: center;
+    /* コンテンツが少ない場合の中央寄せ */
     align-items: center;
-    padding: 40px 20px;
+    padding: 80px 20px;
+    /* 上下のパディングでセクション間のスペースを確保 */
     box-sizing: border-box;
-    /* paddingを含めて高さを計算 */
     position: relative;
-    /* 子要素の位置基準 */
     text-align: center;
+    min-height: 50vh;
+    /* 最低限の高さを確保 (任意) */
 }
 
 /* Heroセクション個別スタイル */
 .hero {
     background: url('img/backgrounds/background_top.png') no-repeat center center/cover;
     color: white;
+    height: 100vh;
+    /* Heroセクションだけは画面いっぱいに維持 */
+    padding: 40px 20px;
+    /* Heroのパディングは元に戻す */
 }
 
 .hero::before {
@@ -158,47 +158,61 @@ section h2::after {
     /* アクセントカラー */
 }
 
-/* 各セクションの個別背景 (仮) */
+/* 各セクションの個別背景 (背景画像を維持する場合) */
+/* 各セクションに background-attachment: fixed; を追加すると視差効果のような見た目も可能 */
 #writing {
     background: url('img/backgrounds/background_book.png') no-repeat center center/cover;
-    background-color: #fdfaf6;
-    /* 淡いベージュ系 */
+    /* background-color: #fdfaf6; */
 }
 
 #speaking {
     background: url('img/backgrounds/background_speaking.png') no-repeat center center/cover;
-    background-color: #f6f8fd;
-    /* 淡いブルー系 */
+    /* background-color: #f6f8fd; */
 }
 
 #awards {
     background: url('img/backgrounds/background_awards.png') no-repeat center center/cover;
-    background-color: #f6fdf7;
-    /* 淡いグリーン系 */
+    /* background-color: #f6fdf7; */
 }
 
 #media {
     background: url('img/backgrounds/background_media.png') no-repeat center center/cover;
-    background-color: #fffaf6;
-    /* 淡いオレンジ系 */
+    /* background-color: #fffaf6; */
 }
 
 #internal-awards {
     background: url('img/backgrounds/background_internal.png') no-repeat center center/cover;
-    background-color: #fdf6f6;
-    /* 淡いレッド系 */
+    /* background-color: #fdf6f6; */
 }
 
 #web-tools {
     background: url('img/backgrounds/background_tools.png') no-repeat center center/cover;
-    background-color: #faf6fd;
-    /* 淡いパープル系 */
+    /* background-color: #faf6fd; */
 }
 
 #downloads {
     background: url('img/backgrounds/background_downloads.png') no-repeat center center/cover;
-    background-color: #f8f8f8;
-    /* 元の背景色に近いグレー */
+    /* background-color: #f8f8f8; */
+}
+
+/* 各セクションの背景上にコンテンツが乗るように調整 */
+main>section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.7);
+    /* 背景画像の上に半透明の白レイヤーを重ねる (色や透明度は調整可) */
+    z-index: 1;
+}
+
+/* セクションタイトルやカードコンテナを前面に */
+section h2,
+.card-container {
+    position: relative;
+    z-index: 2;
 }
 
 /* 各セクション内の色調整 (背景色によっては文字が見えにくくなるため) */
@@ -225,8 +239,10 @@ main>section a {
     width: 100%;
     max-width: 1000px;
     margin: 0 auto;
-    overflow-y: auto;
-    max-height: calc(100vh - 150px);
+    /* overflow-y: auto; */
+    /* 不要に */
+    /* max-height: calc(100vh - 150px); */
+    /* 不要に */
     padding: 10px;
 }
 
@@ -364,6 +380,12 @@ footer {
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
+    .hero {
+        height: auto;
+        /* スマホではHeroも高さを自動に */
+        min-height: 80vh;
+    }
+
     .hero h1 {
         font-size: 2.5rem;
     }
@@ -378,25 +400,21 @@ footer {
 
     .card-container {
         grid-template-columns: 1fr;
-        max-height: calc(100vh - 130px);
-        /* スマホ用に調整 */
+        /* max-height: calc(100vh - 130px); */
+        /* 不要に */
         gap: 20px;
-        /* スマホ用にカード間の隙間を少し狭める */
     }
 
-    /* スマホ表示ではカード画像を表示しない */
+    /* スマホ表示ではカード画像を表示しない (これは維持) */
     .card .card-image {
         display: none;
     }
 
     .card {
-        /* 画像非表示に伴い、カード全体のパディングはテキストコンテンツ側に依存 */
         padding: 0;
-        /* .card自体のpaddingは不要に */
     }
 
     .card-content {
-        /* 画像がない場合、コンテンツ部分に直接パディングを設定 */
         padding: 20px;
     }
 }
