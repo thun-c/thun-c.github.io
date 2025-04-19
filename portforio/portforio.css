@@ -418,4 +418,121 @@ footer {
     .card-content {
         padding: 20px;
     }
+
+    /* 通常カードの調整 */
+    .card:not(.card-special) {
+        padding: 0;
+    }
+
+    .card:not(.card-special) .card-image {
+        display: none;
+    }
+
+    .card:not(.card-special) .card-content {
+        padding: 20px;
+    }
+
+    /* 特別カードを通常カードと同じ表示にする */
+    .card-special {
+        padding: 0;
+        /* 通常カードに合わせる */
+    }
+
+    .card-special-image {
+        display: none;
+        /* 画像を非表示にする */
+    }
+
+    .card-special-content {
+        width: auto;
+        /* 幅指定を解除 */
+        padding: 20px;
+        /* 通常カードのコンテンツに合わせる */
+        text-align: left;
+        /* 通常カードに合わせる */
+    }
+}
+
+/* 特別扱いのカードスタイル */
+.card-special-link {
+    /* リンク全体を special として扱う */
+    grid-column: 1 / -1;
+    /* グリッドの幅全体を使用 */
+    width: 100%;
+    /* 幅を100%に */
+    max-width: 1000px;
+    /* コンテナの最大幅に合わせる */
+    margin: 0 auto;
+    /* 中央揃え */
+    display: block;
+    /* ブロック要素にする */
+}
+
+.card-special {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+.card-special-image {
+    width: 25%;
+    flex-shrink: 0;
+    margin-right: 20px;
+    box-sizing: border-box;
+}
+
+.card-special-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4px;
+}
+
+.card-special-content {
+    width: calc(75% - 20px);
+    flex-grow: 1;
+    box-sizing: border-box;
+}
+
+.card-special-link:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.card-special-content h3 {
+    font-size: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.card-special-content p {
+    margin-bottom: 10px;
+    color: #555;
+}
+
+.card-special-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* レスポンシブ対応: スマホ表示では縦積みにする */
+@media (max-width: 768px) {
+
+    /* 通常カードの画像非表示 */
+    .card:not(.card-special) .card-image {
+        display: none;
+    }
+
+    /* 特別カードは画像を維持 (flex-direction: column で制御されるため不要かもしれないが念のため) */
+    .card-special-image {
+        display: none;
+    }
 }
