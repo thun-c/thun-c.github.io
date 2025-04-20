@@ -32,11 +32,19 @@
             <h2>{{ section.title }}</h2>
             <div class="card-container">
                 {% for card in section.cards %}
-                {# Determine link attributes #}
-                {% set link_target = 'target="_blank" rel="noopener noreferrer"' if card.link != '#' else '' %}
-
+                {# Determine link attributes only if there is a link #}
+                {% set has_link = card.link != '#' %}
+                {% set link_target = 'target="_blank" rel="noopener noreferrer"' if has_link else '' %}
+                {% set link_class = 'card-link' %}
                 {% if card.is_special %}
-                <a href="{{ card.link }}" {{ link_target | safe }} class="card-link card-special-link">
+                {% set link_class = link_class ~ ' card-special-link' %}
+                {% endif %}
+
+                {% if has_link %}
+                <a href="{{ card.link }}" {{ link_target | safe }} class="{{ link_class }}">
+                    {% endif %}
+
+                    {% if card.is_special %}
                     <div class="card card-special">
                         {% if card.image %}
                         <div class="card-special-image">
@@ -50,9 +58,7 @@
                             {% endfor %}
                         </div>
                     </div>
-                </a>
-                {% else %}
-                <a href="{{ card.link }}" {{ link_target | safe }} class="card-link">
+                    {% else %}
                     <div class="card">
                         {% if card.image %}
                         <div class="card-image">
@@ -66,8 +72,12 @@
                             {% endfor %}
                         </div>
                     </div>
+                    {% endif %}
+
+                    {% if has_link %}
                 </a>
                 {% endif %}
+
                 {% endfor %}
             </div>
         </section>
