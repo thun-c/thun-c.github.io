@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ portfolio_data.hero_title }} ポートフォリオ</title>
+    <link rel="stylesheet" href="portforio.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+    <header class="hero">
+        <div class="hero-content">
+            <h1>{{ portfolio_data.hero_title }}</h1>
+            {% if portfolio_data.hero_subtitle %}<p>{{ portfolio_data.hero_subtitle }}</p>{% endif %}
+        </div>
+        <div class="scroll-down">
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </header>
+
+    <main>
+        {% for section in portfolio_data.sections %}
+        <section id="{{ section.id }}">
+            <h2>{{ section.title }}</h2>
+            <div class="card-container">
+                {% for card in section.cards %}
+                {# Determine link attributes #}
+                {% set link_target = 'target="_blank" rel="noopener noreferrer"' if card.link != '#' else '' %}
+
+                {% if card.is_special %}
+                <a href="{{ card.link }}" {{ link_target | safe }} class="card-link card-special-link">
+                    <div class="card card-special">
+                        {% if card.image %}
+                        <div class="card-special-image">
+                            <img src="{{ card.image.src }}" alt="{{ card.image.alt }}">
+                        </div>
+                        {% endif %}
+                        <div class="card-special-content">
+                            <h3>{{ card.title }}</h3>
+                            {% for p in card.description %}
+                            <p>{{ p }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </a>
+                {% else %}
+                <a href="{{ card.link }}" {{ link_target | safe }} class="card-link">
+                    <div class="card">
+                        {% if card.image %}
+                        <div class="card-image">
+                            <img src="{{ card.image.src }}" alt="{{ card.image.alt }}">
+                        </div>
+                        {% endif %}
+                        <div class="card-content">
+                            <h3>{{ card.title }}</h3>
+                            {% for p in card.description %}
+                            <p>{{ p }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </a>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </main>
+
+    <footer>
+        {# Attempt to get name before '/' or use full title if no '/' #}
+        {% set name_part = portfolio_data.hero_title.split('/')[0].strip() if '/' in portfolio_data.hero_title else
+        portfolio_data.hero_title %}
+        <p>&copy; {{ current_year }} {{ name_part }}</p>
+    </footer>
+
+</body>
+
+</html>
