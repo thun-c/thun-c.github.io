@@ -266,7 +266,7 @@ main>section a {
 
 /* カード */
 .card {
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: var(--card-bg-color);
     border-radius: 8px;
     /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); */
     /* 影は .card-link に */
@@ -473,7 +473,7 @@ footer {
     flex-direction: row;
     align-items: center;
     width: 100%;
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: var(--card-bg-color);
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -535,4 +535,8 @@ footer {
     .card-special-image {
         display: none;
     }
+}
+
+:root {
+    --card-bg-color: rgba(255, 255, 255, 0.75);
 }
