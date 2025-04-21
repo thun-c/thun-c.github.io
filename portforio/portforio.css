@@ -456,8 +456,8 @@ footer {
 /* 特別扱いのカードスタイル */
 .card-special-link {
     /* リンク全体を special として扱う */
-    grid-column: 1 / -1;
     /* グリッドの幅全体を使用 */
+    grid-column: 1 / -1;
     width: 100%;
     /* 幅を100%に */
     max-width: 1000px;
@@ -469,6 +469,7 @@ footer {
 }
 
 .card-special {
+    grid-column: 1 / -1;
     display: flex;
     flex-direction: row;
     align-items: center;

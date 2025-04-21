@@ -29,8 +29,7 @@ id: speaking
 ## 講演登壇歴
 
 ### TOYOTA AHC 至高のアルゴリズム解説会
-[#](link_placeholder)
-![TOYOTA AHC 解説会](img/cards/toyota_ahc.png)
+![TOYOTA AHC 解説会](img/bigcards/bigcards_shikou.png){type=special}
 トヨタ自動車が過去に開催したヒューリスティックコンテストのコンテスト優勝解法を超える解法を解説
 
 ### 株式会社Spakona 技術顧問
