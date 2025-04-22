@@ -541,3 +541,43 @@ footer {
 :root {
     --card-bg-color: rgba(255, 255, 255, 0.75);
 }
+
+/* SNS Links Fixed at Bottom Left */
+#social-links {
+    position: fixed;
+    /* 画面に固定 */
+    bottom: 20px;
+    /* 下から20px */
+    left: 20px;
+    /* 左から20px */
+    z-index: 1000;
+    /* 最前面に表示 */
+    display: flex;
+    /* アイコンを縦に並べるためにFlexboxを使用 */
+    flex-direction: column;
+    /* アイテムを縦方向に配置 */
+    gap: 15px;
+    /* アイコン間の垂直スペース */
+}
+
+#social-links a {
+    display: inline-block;
+    /* Allows transforms */
+    transition: transform 0.2s ease-in-out;
+}
+
+#social-links a:hover {
+    transform: scale(1.1);
+    /* Slightly enlarge on hover */
+}
+
+#social-links img {
+    width: 32px;
+    /* アイコンの幅 */
+    height: 32px;
+    /* アイコンの高さ */
+    vertical-align: middle;
+    /* Align icons nicely if needed */
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+    /* Add subtle shadow */
+}
