@@ -51,6 +51,11 @@ https://speakerdeck.com/thunderc/shi-jie-si-lian-ba-aienziniagajiao-eru-tan-suo-
 書泉ブックタワー / 2023
 著書『ゲームで学ぶ 探索アルゴリズム実践入門』の執筆秘話の紹介と先行販売、サイン会
 
+### AtCoderの公式生放送「あーだこーだー」第71回
+https://www.youtube.com/watch?v=7y5JT91QpRo
+![](img/cards/cards_aadacoder.png)
+
+
 ---
 id: awards
 ## プログラミングコンテスト受賞歴
