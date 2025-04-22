@@ -66,33 +66,33 @@ IEEE Conference on Games で開催された、格闘ゲームAIを開発する�
 入力情報の遅延や1/60秒という短い計算時間の中、専用の順序で探索するアルゴリズムを考案し、ルール変更にも柔軟に対応した。
 
 ### AI Snakes Competition 2020 優勝
-
+![](img/cards/cards_snake.png)
 スネークゲームを二人対戦用に改変したゲームのAIを開発し、勝敗を競う。
 同時着手ゲームで扱いづらいAlphaBeta法の探索順序と評価関数を工夫することで同時着手ゲームに適用し、ビット演算により高速化した。
 
 ### ColorShapeLinks AI competition 2020 Base Track 優勝
-
+![](img/cards/cards_shape.png)
 コネクトフォーに色と形の概念を加えたゲームのAIを開発し、勝敗を競う。
 従来のコネクトフォーのビット演算を応用し、高速なMCTSを行った。
 
 ### DareFightingICE: AI Track 2022~2024 三年連続優勝
-
+![](img/cards/cards_dare.png)
 前述のFighting Game AI Competitionが名前とルールを一新し、2022年に始まったコンテスト
 ゲーム内のフレーム情報や視覚情報が一切与えられず、ステレオの音情報のみを入力とする格闘ゲームのAIを開発し、勝敗を競う。
 各技を発動した際の後隙を利用することで、狙ったタイミングで条件分岐する手法を考案した。
 
 ### Geometry Friends Competition: Circle Track 2023 優勝
-
+![](img/cards/cards_geo.png)
 物理演算を持ちいた、物体をゴールに運ぶゲームのAIを開発し、時間を競う。
 盤面をグリッド上に離散化し、探索空間を狭める工夫をした。
 
 ### VGC AI Competition : Championship Track 2024 優勝
-
+![](img/cards/cards_vgc.png)
 複数のモンスターを選んでパーティーを組み、各モンスター4つの技を用いたターン性RPGのAIを開発し、勝敗を競う。
 弱点や特殊能力を考慮しながら相手を倒すためにかかるターン数の期待値をDPで計算し、パーティ編成と技選択に利用した。
 
 ### その他の受賞歴
-
+![](img/cards/cards_codevs.png)
 - SamurAI Coding 2013 決勝進出
 - CODEVS 2013,2014 決勝進出(計2回)
 - ColorShapeLinks AI competition Unknown Track 2020,Unknown Track 2021, Base Track 2021  3位 (計3回)
@@ -165,11 +165,13 @@ id: web-tools
 ## Webツール集
 
 ### Contest Scheduling Visualizer
+![](img/bigcards/bigcards_intro.png){type=special}
 https://thun-c.github.io/visualizer/introduction/Visualizer.html
 Introduction to Heuristics Contestの非公式ビジュアライザ
 AHCの形式に対応したローカルテスタも同梱しており、AHCの練習に有用
 
 ### 数字集め迷路
+![](img/bigcards/bigcards_maze.png){type=special}
 https://thun-c.github.io/one_player_maze/one_player_maze.html
 ゲームで学ぶ探索アルゴリズム実践入門で紹介したゲームをweb上で遊ぶことができる
 
@@ -178,7 +180,9 @@ id: downloads
 ## ダウンロードコンテンツ
 
 ### LINE スタンプ マブい魔法使い
+![](img/cards/cards_mabui.png)
 [https://store.line.me/stickershop/product/3059034](https://store.line.me/stickershop/product/3059034)
 
 ### LINE スタンプ 競プロ
+![](img/cards/cards_kyopro.png)
 [https://store.line.me/stickershop/product/1523143](https://store.line.me/stickershop/product/1523143)
