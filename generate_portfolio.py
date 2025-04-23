@@ -169,9 +169,9 @@ def render_html(data, template_file, output_file):
 
 if __name__ == "__main__":
     markdown_file = "portforio/portforio.md"
-    template_file = "portforio/template.html"
+    template_file = "template.html"
     # Output to a different file initially to avoid accidental overwrites during testing
-    output_file = "portforio/portforio_generated.html"
+    output_file = "index.html"
 
     if not re.match(r'^[\w\.\-\/]+$', markdown_file) or \
        not re.match(r'^[\w\.\-\/]+$', template_file) or \

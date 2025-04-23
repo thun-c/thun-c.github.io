@@ -3,36 +3,36 @@ Optimization / Game AI Engineer
 
 ---
 id: writing
-icon: img/icons/book.png
+icon: portforio/img/icons/book.png
 ## Writing
 
 ### ゲームで学ぶ探索アルゴリズム実践入門～木探索とメタヒューリスティクス
 [https://gihyo.jp/book/2023/978-4-297-13360-3](https://gihyo.jp/book/2023/978-4-297-13360-3)
-![ゲームで学ぶ探索アルゴリズム実践入門](img/bigcards/bigcards_thunder_book.jpg){type=special}
+![ゲームで学ぶ探索アルゴリズム実践入門](portforio/img/bigcards/bigcards_thunder_book.jpg){type=special}
 技術評論社
 ゲームを題材に、探索アルゴリズムの重要性と魅力を楽しく学ぶための入門書
 
 ### AHC典型解法シリーズ
 [https://qiita.com/thun-c/items/8e7ae0249f1907854763](https://qiita.com/thun-c/items/8e7ae0249f1907854763)
-![AHC典型解法シリーズ](img/cards/cards_qiita.png)
+![AHC典型解法シリーズ](portforio/img/cards/cards_qiita.png)
 Qiita
 AtCoderのヒューリスティックコンテストで頻出の解法について、具体例とサンプルコードをつけて課題を解く過程を説明
 
 ### 世界四連覇AIエンジニアがゼロから教えるゲーム木探索入門
 [https://qiita.com/thun-c/items/058743a25c37c87b8aa4](https://qiita.com/thun-c/items/058743a25c37c87b8aa4)
-![世界四連覇AIエンジニアがゼロから教えるゲーム木探索入門](img/cards/cards_search_qiita.png)
+![世界四連覇AIエンジニアがゼロから教えるゲーム木探索入門](portforio/img/cards/cards_search_qiita.png)
 Qiita
 ゲームで学ぶ探索アルゴリズム実践入門の前身となった記事
 
 
 ---
 id: speaking
-icon: img/icons/speak.png
+icon: portforio/img/icons/speak.png
 ## Speaking
 
 ### TOYOTA AHC 至高のアルゴリズム解説会
 https://atcoder.jp/contests/TOYOTA_AHCSupremeAlgorithmExplanatoryMeeting
-![TOYOTA AHC 解説会](img/bigcards/bigcards_shikou.png){type=special}
+![TOYOTA AHC 解説会](portforio/img/bigcards/bigcards_shikou.png){type=special}
 トヨタ自動車株式会社 / 2024
 トヨタ自動車が過去に開催したヒューリスティックコンテストの優勝解法を超える解法を解説
 
@@ -43,64 +43,64 @@ https://atcoder.jp/contests/TOYOTA_AHCSupremeAlgorithmExplanatoryMeeting
 
 ### 格闘ゲームを例としたAI開発へのアプローチ【オンラインセミナー】 豆寄席（まめよせ）
 https://mamezou.connpass.com/event/185864/
-![](img/cards/cards_mamezou.png)
+![](portforio/img/cards/cards_mamezou.png)
 株式会社豆蔵 / 2020
 ゲームで学ぶ探索アルゴリズム実践入門の前身となった記事
 
 ### 世界四連覇AIエンジニアが教える「探索アルゴリズム」の魅力
 https://speakerdeck.com/thunderc/shi-jie-si-lian-ba-aienziniagajiao-eru-tan-suo-arugorizumu-nomei-li
-![](img/cards/cards_shosen.png)
+![](portforio/img/cards/cards_shosen.png)
 書泉ブックタワー / 2023
 著書『ゲームで学ぶ 探索アルゴリズム実践入門』の執筆秘話の紹介と先行販売、サイン会
 
 ### AtCoderの公式生放送「あーだこーだー」第71回
 https://www.youtube.com/watch?v=7y5JT91QpRo
-![](img/cards/cards_aadacoder.png)
+![](portforio/img/cards/cards_aadacoder.png)
 
 
 ---
 id: awards
-icon: img/icons/trophy.png
+icon: portforio/img/icons/trophy.png
 ## Competition Awards
 
 ### ハル研プロコン2014 準優勝
-![](img/bigcards/bigcards_hal.gif){type=special}
+![](portforio/img/bigcards/bigcards_hal.gif){type=special}
 ハル研究所が主催するコンテスト。ランダムな妨害要素のあるレースゲームのAIを開発する。Topcoder Open FINALISTやCODE VS優勝者といった非常に優秀なエンジニアが複数参加していた。
 操作の自由度が高い中、将来を考慮した枝刈りをし、良い操作だけを考慮できる工夫をした。
 
 ### Fighting Game AI Competition 2016~2019 四年連続優勝
-![](img/bigcards/bigcards_fice.gif){type=special}
+![](portforio/img/bigcards/bigcards_fice.gif){type=special}
 IEEE Conference on Games で開催された、格闘ゲームAIを開発するコンテスト
 入力情報の遅延や1/60秒という短い計算時間の中、専用の順序で探索するアルゴリズムを考案し、ルール変更にも柔軟に対応した。
 
 ### AI Snakes Competition 2020 優勝
-![](img/cards/cards_snake.png)
+![](portforio/img/cards/cards_snake.png)
 スネークゲームを二人対戦用に改変したゲームのAIを開発し、勝敗を競う。
 同時着手ゲームで扱いづらいAlphaBeta法の探索順序と評価関数を工夫することで同時着手ゲームに適用し、ビット演算により高速化した。
 
 ### ColorShapeLinks AI competition 2020 Base Track 優勝
-![](img/cards/cards_shape.png)
+![](portforio/img/cards/cards_shape.png)
 コネクトフォーに色と形の概念を加えたゲームのAIを開発し、勝敗を競う。
 従来のコネクトフォーのビット演算を応用し、高速なMCTSを行った。
 
 ### DareFightingICE: AI Track 2022~2024 三年連続優勝
-![](img/cards/cards_dare.png)
+![](portforio/img/cards/cards_dare.png)
 前述のFighting Game AI Competitionが名前とルールを一新し、2022年に始まったコンテスト
 ゲーム内のフレーム情報や視覚情報が一切与えられず、ステレオの音情報のみを入力とする格闘ゲームのAIを開発し、勝敗を競う。
 各技を発動した際の後隙を利用することで、狙ったタイミングで条件分岐する手法を考案した。
 
 ### Geometry Friends Competition: Circle Track 2023 優勝
-![](img/cards/cards_geo.png)
+![](portforio/img/cards/cards_geo.png)
 物理演算を持ちいた、物体をゴールに運ぶゲームのAIを開発し、時間を競う。
 盤面をグリッド上に離散化し、探索空間を狭める工夫をした。
 
 ### VGC AI Competition : Championship Track 2024 優勝
-![](img/cards/cards_vgc.png)
+![](portforio/img/cards/cards_vgc.png)
 複数のモンスターを選んでパーティーを組み、各モンスター4つの技を用いたターン性RPGのAIを開発し、勝敗を競う。
 弱点や特殊能力を考慮しながら相手を倒すためにかかるターン数の期待値をDPで計算し、パーティ編成と技選択に利用した。
 
 ### その他の受賞歴
-![](img/cards/cards_codevs.png)
+![](portforio/img/cards/cards_codevs.png)
 - SamurAI Coding 2013 決勝進出
 - CODEVS 2013,2014 決勝進出(計2回)
 - ColorShapeLinks AI competition Unknown Track 2020,Unknown Track 2021, Base Track 2021  3位 (計3回)
@@ -110,7 +110,7 @@ IEEE Conference on Games で開催された、格闘ゲームAIを開発する�
 
 ---
 id: media
-icon: img/icons/media.png
+icon: portforio/img/icons/media.png
 ## Media
 
 ### AIエンジニア青木栄太がIEEE主催「Fighting Game AI competition」にて優勝しました！
@@ -148,7 +148,7 @@ https://note.com/gridpredict/n/n56a77d256f16
 
 ---
 id: internal-awards
-icon: img/icons/medal.png
+icon: portforio/img/icons/medal.png
 ## Internal awards
 
 ### HEROZアワード
@@ -172,29 +172,29 @@ HEROZ株式会社
 
 ---
 id: web-tools
-icon: img/icons/gear.png
+icon: portforio/img/icons/gear.png
 ## Tools
 
 ### Contest Scheduling Visualizer
-![](img/bigcards/bigcards_intro.png){type=special}
+![](portforio/img/bigcards/bigcards_intro.png){type=special}
 https://thun-c.github.io/visualizer/introduction/Visualizer.html
 Introduction to Heuristics Contestの非公式ビジュアライザ
 AHCの形式に対応したローカルテスタも同梱しており、AHCの練習に有用
 
 ### 数字集め迷路
-![](img/bigcards/bigcards_maze.png){type=special}
+![](portforio/img/bigcards/bigcards_maze.png){type=special}
 https://thun-c.github.io/one_player_maze/one_player_maze.html
 ゲームで学ぶ探索アルゴリズム実践入門で紹介したゲームをweb上で遊ぶことができる
 
 ---
 id: downloads
-icon: img/icons/download.png
+icon: portforio/img/icons/download.png
 ## Downloads
 
 ### LINE スタンプ マブい魔法使い
-![](img/cards/cards_mabui.png)
+![](portforio/img/cards/cards_mabui.png)
 [https://store.line.me/stickershop/product/3059034](https://store.line.me/stickershop/product/3059034)
 
 ### LINE スタンプ 競プロ
-![](img/cards/cards_kyopro.png)
+![](portforio/img/cards/cards_kyopro.png)
 [https://store.line.me/stickershop/product/1523143](https://store.line.me/stickershop/product/1523143)
