@@ -177,13 +177,13 @@ icon: portforio/img/icons/gear.png
 
 ### Contest Scheduling Visualizer
 ![](portforio/img/bigcards/bigcards_intro.png){type=special}
-https://thun-c.github.io/visualizer/introduction/Visualizer.html
+visualizer/introduction/Visualizer.html
 Introduction to Heuristics Contestの非公式ビジュアライザ
 AHCの形式に対応したローカルテスタも同梱しており、AHCの練習に有用
 
 ### 数字集め迷路
 ![](portforio/img/bigcards/bigcards_maze.png){type=special}
-https://thun-c.github.io/one_player_maze/one_player_maze.html
+one_player_maze/one_player_maze.html
 ゲームで学ぶ探索アルゴリズム実践入門で紹介したゲームをweb上で遊ぶことができる
 
 ---

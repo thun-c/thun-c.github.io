@@ -122,7 +122,8 @@ def parse_markdown(md_file):
 
             # Parse plain URL if link is not set yet
             if not processed_card_detail and current_card["link"] == "#":
-                url_match = re.match(r'^\s*(https?://\S+)\s*$', line)
+                # Modify regex to accept http(s) URLs OR paths ending in .html
+                url_match = re.match(r'^\s*(https?://\S+|\S+\.html)\s*$', line)
                 if url_match:
                     current_card["link"] = url_match.group(1)
                     processed_card_detail = True
