@@ -245,17 +245,17 @@ main>section a {
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 30px;
     width: 100%;
-    max-width: 1000px;
+    max-width: 1010px;
     margin: 0 auto;
-    /* overflow-y: auto; */
-    /* 不要に */
-    /* max-height: calc(100vh - 150px); */
-    /* 不要に */
-    padding: 10px;
+    padding: 10px 10px 10px 40px;
+    /* 左と下に十分なパディングを追加 */
+    box-sizing: border-box;
+    /* paddingを幅計算に含める */
 }
 
 /* カード全体を囲むリンク */
 .card-link {
+    width: 100%;
     text-decoration: none;
     /* リンクの下線を削除 */
     color: inherit;
@@ -408,9 +408,9 @@ footer {
 
     .card-container {
         grid-template-columns: 1fr;
-        /* max-height: calc(100vh - 130px); */
-        /* 不要に */
         gap: 20px;
+        /* padding and box-sizing are now handled by the base style */
+        width: 100%;
     }
 
     /* スマホ表示ではカード画像を表示しない (これは維持) */
