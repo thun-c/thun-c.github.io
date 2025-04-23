@@ -145,22 +145,29 @@ section h2 {
     margin-top: 0;
     /* 上マージンリセット */
     margin-bottom: 40px;
-    color: #333;
+    color: var(--primary-text-color, #333);
+    /* Use CSS variable */
     position: relative;
     padding-bottom: 10px;
+    display: flex;
+    /* Enable Flexbox for alignment */
+    align-items: center;
+    /* Vertically center icon and text */
+    justify-content: center;
+    /* Horizontally center content */
 }
 
-/* セクションタイトルの下線 */
-section h2::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    bottom: 0;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 3px;
-    background-color: #A0522D;
-    /* アクセントカラー */
+
+/* Section Title Icon */
+.section-icon {
+    width: 24px;
+    /* Adjust icon size as needed */
+    height: 24px;
+    /* Adjust icon size as needed */
+    margin-right: 10px;
+    /* Space between icon and title text */
+    vertical-align: middle;
+    /* Helps alignment slightly */
 }
 
 /* 各セクションの個別背景を削除 */

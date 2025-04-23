@@ -3,7 +3,8 @@ Optimization / Game AI Engineer
 
 ---
 id: writing
-## 執筆歴
+icon: img/icons/book.png
+## Writing
 
 ### ゲームで学ぶ探索アルゴリズム実践入門～木探索とメタヒューリスティクス
 [https://gihyo.jp/book/2023/978-4-297-13360-3](https://gihyo.jp/book/2023/978-4-297-13360-3)
@@ -26,7 +27,8 @@ Qiita
 
 ---
 id: speaking
-## 講演登壇歴
+icon: img/icons/speak.png
+## Speaking
 
 ### TOYOTA AHC 至高のアルゴリズム解説会
 https://atcoder.jp/contests/TOYOTA_AHCSupremeAlgorithmExplanatoryMeeting
@@ -58,7 +60,8 @@ https://www.youtube.com/watch?v=7y5JT91QpRo
 
 ---
 id: awards
-## プログラミングコンテスト受賞歴
+icon: img/icons/trophy.png
+## Competition Awards
 
 ### ハル研プロコン2014 準優勝
 ![](img/bigcards/bigcards_hal.gif){type=special}
@@ -107,7 +110,8 @@ IEEE Conference on Games で開催された、格闘ゲームAIを開発する�
 
 ---
 id: media
-## メディア掲載歴
+icon: img/icons/media.png
+## Media
 
 ### AIエンジニア青木栄太がIEEE主催「Fighting Game AI competition」にて優勝しました！
 https://heroz.co.jp/release/2019/08/23heroz_aoki_ai/
@@ -144,7 +148,8 @@ https://note.com/gridpredict/n/n56a77d256f16
 
 ---
 id: internal-awards
-## 社内表彰歴
+icon: img/icons/medal.png
+## Internal awards
 
 ### HEROZアワード
 HEROZ株式会社
@@ -167,7 +172,8 @@ HEROZ株式会社
 
 ---
 id: web-tools
-## Webツール集
+icon: img/icons/gear.png
+## Tools
 
 ### Contest Scheduling Visualizer
 ![](img/bigcards/bigcards_intro.png){type=special}
@@ -182,7 +188,8 @@ https://thun-c.github.io/one_player_maze/one_player_maze.html
 
 ---
 id: downloads
-## ダウンロードコンテンツ
+icon: img/icons/download.png
+## Downloads
 
 ### LINE スタンプ マブい魔法使い
 ![](img/cards/cards_mabui.png)

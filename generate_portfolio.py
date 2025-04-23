@@ -14,21 +14,22 @@ def parse_markdown(md_file):
     current_section = None
     current_card = None
 
-    lines_iter = iter(lines)
-    line = next(lines_iter, None)
+    i = 0
+    # Parse Hero section first using indexing
+    if i < len(lines) and lines[i].startswith('# '):
+        portfolio_data["hero_title"] = lines[i][2:].strip()
+        i += 1
+        if i < len(lines) and not lines[i].startswith('---') and not lines[i].startswith('## ') and not lines[i].startswith('id:'):
+            portfolio_data["hero_subtitle"] = lines[i].strip()
+            i += 1
 
-    # Parse Hero section
-    if line and line.startswith('# '):
-        portfolio_data["hero_title"] = line[2:].strip()
-        line = next(lines_iter, None)
-        # Check if the next line is the subtitle (not a separator, section header, or id)
-        if line and not line.startswith('---') and not line.startswith('## ') and not line.startswith('id:'):
-            portfolio_data["hero_subtitle"] = line.strip()
-            line = next(lines_iter, None) # Move to the next line after subtitle
+    # Parse Sections and Cards using index
+    while i < len(lines):
+        line = lines[i].strip()
 
-    # Parse Sections and Cards
-    while line is not None:
-        line = line.strip()
+        if not line: # Skip empty lines
+            i += 1
+            continue
 
         if line.startswith('---'):
             # Finalize the previous card and section before starting anew
@@ -38,87 +39,108 @@ def parse_markdown(md_file):
             if current_section:
                 portfolio_data["sections"].append(current_section)
                 current_section = None
-            line = next(lines_iter, None)
+            i += 1
             continue
 
         if line.startswith('id:'):
-            section_id = line.split(':', 1)[1].strip()
-            # If a section was already started (e.g., by ##), finalize it
+            # Finalize previous section if exists
             if current_section:
                  if current_card:
                     current_section["cards"].append(current_card)
                     current_card = None
                  portfolio_data["sections"].append(current_section)
-            # Start a new section with this id
-            current_section = {"id": section_id, "title": "", "cards": []}
-            line = next(lines_iter, None)
-            continue
+
+            section_id = line.split(':', 1)[1].strip()
+            # Initialize new section, explicitly setting icon_path to None
+            current_section = {"id": section_id, "title": "", "icon_path": None, "cards": []}
+            i += 1 # Move past id: line
+
+            # Check for optional icon: line immediately after id:
+            if i < len(lines) and lines[i].strip().startswith('icon:'):
+                current_section["icon_path"] = lines[i].split(':', 1)[1].strip()
+                i += 1 # Consume icon line
+            # Expect ## line next
+            continue # Process next line (which should be ## or ---)
 
         if line.startswith('## '):
-            # Finalize the previous card
+            # Finalize previous card if still active
             if current_card and current_section:
                 current_section["cards"].append(current_card)
                 current_card = None
+
             section_title = line[3:].strip()
-            # If section already started by id, just set title
-            if current_section and not current_section["title"]:
+            if current_section and not current_section["title"]: # Section started by id:
                  current_section["title"] = section_title
-            else: # Otherwise, finalize previous section (if any) and start new one
+                 # Icon should have been processed after id: if present
+            else: # Section starts with ##, finalize previous if any
                 if current_section:
                     portfolio_data["sections"].append(current_section)
-                # Generate an id from title if not provided via 'id:'
-                section_id = section_title.lower().replace(' ', '-')
-                current_section = {"id": section_id, "title": section_title, "cards": []}
-            line = next(lines_iter, None)
-            continue
+                section_id = section_title.lower().replace(' ', '-') # Auto-generate id if needed
+                current_section = {"id": section_id, "title": section_title, "icon_path": None, "cards": []}
+
+            i += 1 # Move past ## line
+
+            # Check for optional icon: line immediately after ## (only if not set via id:)
+            if current_section and not current_section.get("icon_path"):
+                 if i < len(lines) and lines[i].strip().startswith('icon:'):
+                    current_section["icon_path"] = lines[i].split(':', 1)[1].strip()
+                    i += 1 # Consume icon line
+
+            continue # Process next line (should be ### or ---)
 
         if line.startswith('### '):
-            # Finalize the previous card before starting a new one within the same section
+            # Finalize the previous card before starting a new one
             if current_card and current_section:
                 current_section["cards"].append(current_card)
-            # Start a new card object
             current_card = {"title": line[4:].strip(), "link": "#", "image": None, "description": [], "is_special": False}
-            line = next(lines_iter, None)
+            i += 1
             continue
 
-        # Ensure we are inside a section and a card before parsing card details
+        # --- Card details parsing ---
+        # Ensure we are processing lines within a card context
         if current_section and current_card:
+            processed_card_detail = False
             # Parse Card Link in [Text](URL) format
             link_match = re.match(r'^\s*\[([^\]]+)\]\(([^\)]+)\)\s*$', line)
             if link_match:
-                # link_text = link_match.group(1) # Not currently used
                 link_url = link_match.group(2)
                 if link_url != 'link_placeholder':
                      current_card["link"] = link_url
-                line = next(lines_iter, None)
-                continue
+                processed_card_detail = True
 
             # Parse Card Image
-            img_match = re.match(r'^\s*!\[([^\]]*)\]\(([^\)]+)\)(\{type=special\})?\s*$', line)
-            if img_match:
-                alt_text = img_match.group(1)
-                img_src = img_match.group(2)
-                special_flag = img_match.group(3)
-                current_card["image"] = {"src": img_src, "alt": alt_text}
-                if special_flag:
-                    current_card["is_special"] = True
-                line = next(lines_iter, None)
-                continue
+            if not processed_card_detail:
+                img_match = re.match(r'^\s*!\[([^\]]*)\]\(([^\)]+)\)(\{type=special\})?\s*$', line)
+                if img_match:
+                    alt_text = img_match.group(1)
+                    img_src = img_match.group(2)
+                    special_flag = img_match.group(3)
+                    current_card["image"] = {"src": img_src, "alt": alt_text}
+                    if special_flag:
+                        current_card["is_special"] = True
+                    processed_card_detail = True
 
             # Parse plain URL if link is not set yet
-            if current_card["link"] == "#": # Only if link hasn't been set by [Text](URL)
+            if not processed_card_detail and current_card["link"] == "#":
                 url_match = re.match(r'^\s*(https?://\S+)\s*$', line)
                 if url_match:
                     current_card["link"] = url_match.group(1)
-                    line = next(lines_iter, None)
-                    continue
+                    processed_card_detail = True
 
-            # Parse Card Description (if it's not empty and not any special format)
-            if line:
+            # If it wasn't a link or image, treat as Description
+            if not processed_card_detail and line:
                 current_card["description"].append(line)
+                processed_card_detail = True # Consider description as processed detail
 
-        # Move to the next line for the next iteration
-        line = next(lines_iter, None)
+            # If any card detail was processed, move to next line
+            if processed_card_detail:
+                 i += 1
+                 continue
+        # --- End Card details parsing ---
+
+        # If the line didn't match any pattern above, just move to the next line
+        i += 1
+
 
     # Add the last processed card and section after the loop finishes
     if current_card and current_section:

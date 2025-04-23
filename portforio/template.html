@@ -38,7 +38,12 @@
     <main>
         {% for section in portfolio_data.sections %}
         <section id="{{ section.id }}">
-            <h2>{{ section.title }}</h2>
+            <h2>
+                {% if section.icon_path %}
+                <img src="{{ section.icon_path }}" alt="{{ section.title }} icon" class="section-icon">
+                {% endif %}
+                {{ section.title }}
+            </h2>
             <div class="card-container">
                 {% for card in section.cards %}
                 {# Determine link attributes only if there is a link #}
