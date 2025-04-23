@@ -160,12 +160,12 @@ section h2 {
 
 /* Section Title Icon */
 .section-icon {
-    width: 24px;
-    /* Adjust icon size as needed */
-    height: 24px;
-    /* Adjust icon size as needed */
-    margin-right: 10px;
-    /* Space between icon and title text */
+    width: 36px;
+    /* アイコンの幅 (例: 24px -> 36px) */
+    height: 36px;
+    /* アイコンの高さ (例: 24px -> 36px) */
+    margin-right: 15px;
+    /* アイコンとテキスト間のスペース (例: 10px -> 15px) */
     vertical-align: middle;
     /* Helps alignment slightly */
 }
