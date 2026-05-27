@@ -73,6 +73,11 @@ icon: portforio/img/icons/trophy.png
 IEEE Conference on Games で開催された、格闘ゲームAIを開発するコンテスト
 入力情報の遅延や1/60秒という短い計算時間の中、専用の順序で探索するアルゴリズムを考案し、ルール変更にも柔軟に対応した。
 
+### 第４回 空戦AIチャレンジ 総合優勝
+![](portforio/img/bigcards/bigcards_kusen.avif){type=special}
+SIGNATE で開催された、防衛装備庁が主催するマルチエージェントの対戦型AIコンテスト。参加登録チーム数1680と大規模で、過去3大会を連覇中の参加者もおり、非常にレベルの高いコンテストだった。
+Spakona社との協力の元、カリキュラム学習を用いたAIを開発した。<br>自身は学習相手としての非学習エージェントの開発を主に担当した。
+
 ### AI Snakes Competition 2020 優勝
 ![](portforio/img/cards/cards_snake.png)
 スネークゲームを二人対戦用に改変したゲームのAIを開発し、勝敗を競う。
@@ -83,7 +88,7 @@ IEEE Conference on Games で開催された、格闘ゲームAIを開発する�
 コネクトフォーに色と形の概念を加えたゲームのAIを開発し、勝敗を競う。
 従来のコネクトフォーのビット演算を応用し、高速なMCTSを行った。
 
-### DareFightingICE: AI Track 2022~2024 三年連続優勝
+### DareFightingICE: AI Track 2022~2025 四年連続優勝
 ![](portforio/img/cards/cards_dare.png)
 前述のFighting Game AI Competitionが名前とルールを一新し、2022年に始まったコンテスト
 ゲーム内のフレーム情報や視覚情報が一切与えられず、ステレオの音情報のみを入力とする格闘ゲームのAIを開発し、勝敗を競う。
