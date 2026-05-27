@@ -36,6 +36,12 @@ https://atcoder.jp/contests/TOYOTA_AHCSupremeAlgorithmExplanatoryMeeting
 トヨタ自動車株式会社 / 2024
 トヨタ自動車が過去に開催したヒューリスティックコンテストの優勝解法を超える解法を解説
 
+### AtCoder Heuristic First-step Vol.2
+https://info.atcoder.jp/entry/2026/04/09/100035
+AtCoder / 2026
+AHCの楽しさや魅力を気軽に体験できる、初心者向けのオンサイトイベント
+![AtCoder Heuristic First-step Vol.2](portforio/img/bigcards/bigcards_ahf.png){type=special}
+
 ### 株式会社Spakona 技術顧問
 株式会社Spakona / 2025~
 週に1回、Spakona社の役員の方々向けに行っている勉強会
@@ -56,6 +62,7 @@ https://speakerdeck.com/thunderc/shi-jie-si-lian-ba-aienziniagajiao-eru-tan-suo-
 ### AtCoderの公式生放送「あーだこーだー」第71回
 https://www.youtube.com/watch?v=7y5JT91QpRo
 ![](portforio/img/cards/cards_aadacoder.png)
+
 
 
 ---
