@@ -73,6 +73,7 @@ function handleClick(event) {
   if (!target) {
     return;
   }
+  event.preventDefault();
   const action = target.dataset.action;
 
   if (target.dataset.disabledReason) {
@@ -100,10 +101,13 @@ function handleClick(event) {
   }
 
   if (action === "new-game") {
-    if (window.confirm("現在のゲームを終了して新規ゲームに戻りますか？")) {
-      resetTransientState();
-      handlers.onNewGame();
+    if (currentGame && currentGame.phase !== "gameOver") {
+      modal = { type: "confirmNewGame" };
+      render(currentGame, currentData, currentOptions);
+      return;
     }
+    resetTransientState();
+    handlers.onNewGame();
     return;
   }
 
@@ -160,6 +164,12 @@ function handleClick(event) {
   if (action === "close-modal") {
     modal = null;
     render(currentGame, currentData, currentOptions);
+    return;
+  }
+
+  if (action === "confirm-new-game") {
+    resetTransientState();
+    handlers.onNewGame();
     return;
   }
 
@@ -299,7 +309,7 @@ function renderGame(game, data, options) {
         <div class="topbar-status">
           <span class="status-pill ${game.phase}">${phaseLabel(game.phase)}</span>
           <span class="current-player">${escapeHtml(player.name)}</span>
-          <button class="icon-button" type="button" data-action="new-game" title="新規ゲーム">↺</button>
+          <button class="ghost-button topbar-button" type="button" data-action="new-game">新規ゲーム</button>
         </div>
       </header>
       ${renderGameOver(game, winners)}
@@ -572,6 +582,10 @@ function renderModal(game) {
     return "";
   }
 
+  if (modal.type === "confirmNewGame") {
+    return renderNewGameConfirmModal();
+  }
+
   const player = getCurrentPlayer(game);
   const source = modal.source;
   const card = source.type === "deck" ? null : findCardBySource(game, source);
@@ -614,6 +628,25 @@ function renderModal(game) {
               : ""
           }
           <button class="ghost-button" type="button" data-action="reserve-card" ${canReserve ? "" : "disabled"}>予約</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderNewGameConfirmModal() {
+  return `
+    <div class="modal-backdrop">
+      <div class="card-modal confirm-modal">
+        <button class="close-button" type="button" data-action="close-modal" title="閉じる">×</button>
+        <div class="modal-details">
+          <p class="eyebrow">New Game</p>
+          <h2>新規ゲームに戻りますか？</h2>
+          <p>現在のゲームの進行状況は保存から削除されます。</p>
+        </div>
+        <div class="modal-actions">
+          <button class="ghost-button" type="button" data-action="close-modal">キャンセル</button>
+          <button class="primary-button" type="button" data-action="confirm-new-game">新規ゲーム</button>
         </div>
       </div>
     </div>

@@ -164,8 +164,7 @@ button[aria-disabled="true"] {
 }
 
 .primary-button,
-.ghost-button,
-.icon-button {
+.ghost-button {
   min-height: 40px;
   border-radius: 8px;
   border: 1px solid transparent;
@@ -182,16 +181,14 @@ button[aria-disabled="true"] {
   background: var(--accent-strong);
 }
 
-.ghost-button,
-.icon-button {
+.ghost-button {
   background: #ffffff;
   border-color: var(--line);
   color: var(--ink);
 }
 
-.icon-button {
-  width: 40px;
-  padding: 0;
+.topbar-button {
+  white-space: nowrap;
 }
 
 .full-width {
@@ -701,6 +698,10 @@ button.noble-tile.is-claimable {
   border-radius: 8px;
   padding: 20px;
   box-shadow: var(--shadow);
+}
+
+.confirm-modal {
+  grid-template-columns: 1fr;
 }
 
 .close-button {
