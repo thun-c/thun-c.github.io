@@ -502,9 +502,14 @@ function renderPlayersPanel(game) {
       <span>${END_SCORE}点</span>
     </div>
     <div class="player-detail-list">
-      ${game.players.map((player) => renderPlayerDetail(game, player)).join("")}
+      ${getPlayersInTurnOrder(game).map((player) => renderPlayerDetail(game, player)).join("")}
     </div>
   `;
+}
+
+function getPlayersInTurnOrder(game) {
+  const order = game.turnOrder || game.players.map((player) => player.id);
+  return order.map((id) => game.players[id]).filter(Boolean);
 }
 
 function renderPlayerDetail(game, player) {

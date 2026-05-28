@@ -56,6 +56,7 @@ game/splendor/
 - 新規ゲーム開始
 - CPU対戦を後から追加しやすい状態・アクション設計
 - `easy` CPU
+- ゲーム開始時の手番順シャッフル
 
 ### 後回しにするもの
 
@@ -187,8 +188,10 @@ game/splendor/
 ```js
 {
   players: Player[],
-  currentPlayerIndex: 0,
-  startPlayerIndex: 0,
+  turnOrder: [2, 0, 1],
+  currentTurnOrderIndex: 0,
+  currentPlayerIndex: 2,
+  startPlayerIndex: 2,
   round: 1,
   phase: "action",
   settings: {

@@ -32,10 +32,13 @@ export function createNewGame(playerConfigs, data) {
   const configs = playerConfigs.slice(0, 4);
   const decks = buildDecks(data.cards);
   const playerCount = configs.length;
+  const turnOrder = shuffle(configs.map((_, index) => index));
   const game = {
     players: configs.map((config, index) => createPlayer(index, config)),
-    currentPlayerIndex: 0,
-    startPlayerIndex: 0,
+    turnOrder,
+    currentTurnOrderIndex: 0,
+    currentPlayerIndex: turnOrder[0],
+    startPlayerIndex: turnOrder[0],
     round: 1,
     phase: "action",
     settings: {
@@ -65,6 +68,7 @@ export function createNewGame(playerConfigs, data) {
   });
 
   refreshScores(game);
+  addLog(game, `手番順: ${turnOrder.map((id) => game.players[id].name).join(" → ")}`);
   addLog(game, `${playerCount}人でゲームを開始しました。`);
   return game;
 }
@@ -118,8 +122,16 @@ export function restoreGame(game) {
   game.log = game.log || [];
   game.winnerIds = game.winnerIds || [];
   game.phase = game.phase || "action";
-  game.currentPlayerIndex = game.currentPlayerIndex || 0;
-  game.startPlayerIndex = game.startPlayerIndex || 0;
+  game.turnOrder = normalizeTurnOrder(game);
+  game.currentPlayerIndex = Number.isInteger(game.currentPlayerIndex)
+    ? game.currentPlayerIndex
+    : game.turnOrder[0];
+  game.currentTurnOrderIndex = game.turnOrder.indexOf(game.currentPlayerIndex);
+  if (game.currentTurnOrderIndex < 0) {
+    game.currentTurnOrderIndex = 0;
+    game.currentPlayerIndex = game.turnOrder[0];
+  }
+  game.startPlayerIndex = game.startPlayerIndex ?? game.turnOrder[0];
   game.round = game.round || 1;
   refreshScores(game);
   return game;
@@ -806,7 +818,8 @@ function completeTurn(game) {
     addLog(game, `${player.name} が${END_SCORE}点に到達しました。このラウンドで終了します。`);
   }
 
-  const nextIndex = (game.currentPlayerIndex + 1) % game.players.length;
+  const nextTurnOrderIndex = (game.currentTurnOrderIndex + 1) % game.turnOrder.length;
+  const nextIndex = game.turnOrder[nextTurnOrderIndex];
   if (game.finalRoundTriggeredBy !== null && nextIndex === game.startPlayerIndex) {
     game.phase = "gameOver";
     game.winnerIds = getWinners(game);
@@ -815,14 +828,24 @@ function completeTurn(game) {
     return game;
   }
 
+  game.currentTurnOrderIndex = nextTurnOrderIndex;
   game.currentPlayerIndex = nextIndex;
-  if (nextIndex === game.startPlayerIndex) {
+  if (nextTurnOrderIndex === 0) {
     game.round += 1;
   }
   game.phase = "action";
   game.pendingNobles = [];
   game.updatedAt = Date.now();
   return game;
+}
+
+function normalizeTurnOrder(game) {
+  const playerIds = game.players.map((player) => player.id);
+  const existing = Array.isArray(game.turnOrder)
+    ? game.turnOrder.filter((id) => playerIds.includes(id))
+    : [];
+  const missing = playerIds.filter((id) => !existing.includes(id));
+  return [...existing, ...missing];
 }
 
 function addLog(game, text) {
