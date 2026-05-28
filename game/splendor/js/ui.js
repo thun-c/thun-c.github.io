@@ -25,6 +25,7 @@ let currentOptions = {};
 let modal = null;
 let selectedTokens = emptyTokens();
 let selectedDiscard = emptyTokens();
+let noticeTimer = null;
 
 const setupState = {
   playerCount: 2,
@@ -73,6 +74,12 @@ function handleClick(event) {
     return;
   }
   const action = target.dataset.action;
+
+  if (target.dataset.disabledReason) {
+    event.preventDefault();
+    showNotice(target.dataset.disabledReason);
+    return;
+  }
 
   if (action === "set-player-count") {
     setupState.playerCount = Number(target.dataset.count);
@@ -422,6 +429,7 @@ function renderCardFace(card) {
 function renderBank(game) {
   const isAction = canUseAction(game);
   const canConfirm = isAction && canTakeTokens(game, selectedTokens);
+  const confirmReason = canConfirm ? null : getConfirmTokensDisabledReason(game, isAction);
   const selectedCount = totalTokens(selectedTokens);
 
   if (game.phase === "discard" && getCurrentPlayer(game).type === "human") {
@@ -431,9 +439,9 @@ function renderBank(game) {
   return `
     <div class="bank-grid">
       ${ALL_TOKEN_COLORS.map((color) => {
-        const disabled = !isAction || color === "gold" || game.bank[color] <= 0;
+        const tokenReason = getTokenButtonDisabledReason(game, color, isAction);
         return `
-          <button class="token-button gem-${color}" type="button" data-action="select-token" data-color="${color}" ${disabled ? "disabled" : ""}>
+          <button class="token-button gem-${color}" type="button" data-action="select-token" data-color="${color}" ${disabledAttrs(tokenReason)}>
             <span>${COLOR_LABELS[color]}</span>
             <strong>${game.bank[color]}</strong>
           </button>
@@ -441,12 +449,12 @@ function renderBank(game) {
       }).join("")}
     </div>
     <div class="selection-box">
-      <span>選択中</span>
+      <span>選択中: 異なる3色、または同じ色2枚</span>
       <div class="selected-tokens">
         ${renderSelectedTokens(selectedTokens, "remove-token")}
       </div>
       <div class="action-buttons">
-        <button class="primary-button" type="button" data-action="confirm-tokens" ${canConfirm ? "" : "disabled"}>取る</button>
+        <button class="primary-button" type="button" data-action="confirm-tokens" ${disabledAttrs(confirmReason)}>取る</button>
         <button class="ghost-button" type="button" data-action="cancel-tokens" ${selectedCount > 0 ? "" : "disabled"}>取消</button>
       </div>
     </div>
@@ -658,14 +666,18 @@ function canUseAction(game) {
 
 function addSelectedToken(color) {
   if (!canUseAction(currentGame) || color === "gold") {
+    showNotice(getTokenButtonDisabledReason(currentGame, color, canUseAction(currentGame)) || "今はそのトークンを選べません。");
     return;
   }
   const next = { ...selectedTokens };
   next[color] = (next[color] || 0) + 1;
-  if (isPartialTakeSelectionValid(currentGame, next)) {
-    selectedTokens = normalizeTokens(next);
-    render(currentGame, currentData, currentOptions);
+  const reason = getPartialTakeSelectionReason(currentGame, next);
+  if (reason) {
+    showNotice(reason);
+    return;
   }
+  selectedTokens = normalizeTokens(next);
+  render(currentGame, currentData, currentOptions);
 }
 
 function removeSelectedToken(color) {
@@ -786,24 +798,118 @@ function sourceToAttrs(source) {
 }
 
 function isPartialTakeSelectionValid(game, selection) {
+  return getPartialTakeSelectionReason(game, selection) === null;
+}
+
+function getPartialTakeSelectionReason(game, selection) {
   const tokens = normalizeTokens(selection);
   if (tokens.gold > 0 || totalTokens(tokens) > 3) {
-    return false;
+    return "一度に取れる宝石は最大3枚です。";
   }
   if (TOKEN_COLORS.some((color) => tokens[color] > game.bank[color])) {
-    return false;
+    return "場に残っている枚数を超えては取れません。";
   }
 
   const selected = TOKEN_COLORS.filter((color) => tokens[color] > 0);
   if (selected.length === 0) {
-    return true;
+    return null;
   }
 
   if (selected.length === 1 && tokens[selected[0]] <= 2) {
-    return tokens[selected[0]] === 1 || game.bank[selected[0]] >= 4;
+    if (tokens[selected[0]] === 1 || game.bank[selected[0]] >= 4) {
+      return null;
+    }
+    return `同じ宝石2枚を取るには、その色が場に4枚以上必要です。現在は${game.bank[selected[0]]}枚です。`;
   }
 
-  return selected.every((color) => tokens[color] === 1);
+  if (selected.length <= 3 && selected.every((color) => tokens[color] === 1)) {
+    return null;
+  }
+
+  return "取れる組み合わせは、異なる3色または同じ色2枚です。";
+}
+
+function getTokenButtonDisabledReason(game, color, isAction) {
+  if (!game) {
+    return "ゲーム開始後に選べます。";
+  }
+  if (!isAction) {
+    return getActionBlockedReason(game);
+  }
+  if (color === "gold") {
+    return "黄金は直接取れません。カード予約時に残っていれば1枚受け取ります。";
+  }
+  if (game.bank[color] <= 0) {
+    return `${COLOR_LABELS[color]}は場に残っていません。`;
+  }
+  return null;
+}
+
+function getConfirmTokensDisabledReason(game, isAction) {
+  if (!game) {
+    return "ゲーム開始後に選べます。";
+  }
+  if (!isAction) {
+    return getActionBlockedReason(game);
+  }
+
+  const selectedCount = totalTokens(selectedTokens);
+  if (selectedCount === 0) {
+    return "異なる3色、または同じ色2枚を選んでください。";
+  }
+
+  const selectedColors = TOKEN_COLORS.filter((color) => selectedTokens[color] > 0);
+  if (selectedColors.length === 1 && selectedTokens[selectedColors[0]] === 1) {
+    return "同じ色をもう1枚選ぶか、異なる3色になるように選んでください。";
+  }
+  if (selectedColors.length === 2 && selectedColors.every((color) => selectedTokens[color] === 1)) {
+    return "異なる宝石を取る場合は3色選んでください。";
+  }
+
+  return getPartialTakeSelectionReason(game, selectedTokens) || "この組み合わせでは取れません。";
+}
+
+function getActionBlockedReason(game) {
+  if (currentOptions.busy || getCurrentPlayer(game).type === "cpu") {
+    return "CPUの手番中です。";
+  }
+  if (game.phase === "discard") {
+    return "先にトークンを10枚以下に返却してください。";
+  }
+  if (game.phase === "noble") {
+    return "先に獲得する貴族を選んでください。";
+  }
+  if (game.phase === "gameOver") {
+    return "ゲームは終了しています。";
+  }
+  return "今はトークンを取るタイミングではありません。";
+}
+
+function disabledAttrs(reason) {
+  if (!reason) {
+    return "";
+  }
+  return `aria-disabled="true" data-disabled-reason="${escapeAttr(reason)}"`;
+}
+
+function showNotice(message) {
+  if (!message) {
+    return;
+  }
+
+  let notice = document.querySelector(".notice-popup");
+  if (!notice) {
+    notice = document.createElement("div");
+    notice.className = "notice-popup";
+    document.body.appendChild(notice);
+  }
+
+  notice.textContent = message;
+  notice.classList.add("is-visible");
+  window.clearTimeout(noticeTimer);
+  noticeTimer = window.setTimeout(() => {
+    notice.classList.remove("is-visible");
+  }, 2600);
 }
 
 function getPlayerConfigs() {

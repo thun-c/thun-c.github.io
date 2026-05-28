@@ -199,7 +199,7 @@ export function canTakeTokens(game, selection) {
 
   const selectedColors = TOKEN_COLORS.filter((color) => tokens[color] > 0);
   const count = selectedColors.reduce((sum, color) => sum + tokens[color], 0);
-  if (count < 1 || count > 3) {
+  if (count !== 2 && count !== 3) {
     return false;
   }
 
@@ -211,7 +211,7 @@ export function canTakeTokens(game, selection) {
     return game.bank[selectedColors[0]] >= 4;
   }
 
-  return selectedColors.length === count && selectedColors.every((color) => tokens[color] === 1);
+  return count === 3 && selectedColors.length === 3 && selectedColors.every((color) => tokens[color] === 1);
 }
 
 export function canReserveCard(game, player) {
@@ -574,8 +574,8 @@ function getTakeTokenActions(game, playerId) {
   const actions = [];
   const available = TOKEN_COLORS.filter((color) => game.bank[color] > 0);
 
-  for (let size = 1; size <= Math.min(3, available.length); size += 1) {
-    for (const combination of combinations(available, size)) {
+  if (available.length >= 3) {
+    for (const combination of combinations(available, 3)) {
       const tokens = emptyTokens();
       combination.forEach((color) => {
         tokens[color] = 1;
