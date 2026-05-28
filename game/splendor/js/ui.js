@@ -1,0 +1,841 @@
+import {
+  ALL_TOKEN_COLORS,
+  COLOR_LABELS,
+  COLOR_NAMES,
+  END_SCORE,
+  TOKEN_COLORS,
+  calculateAutoPayment,
+  canBuyCard,
+  canReserveCard,
+  canTakeTokens,
+  emptyTokens,
+  formatTokenSelection,
+  getCurrentPlayer,
+  getPlayerBonuses,
+  levelKey,
+  normalizeTokens,
+  totalTokens,
+} from "./game.js";
+
+let root = null;
+let handlers = {};
+let currentGame = null;
+let currentData = null;
+let currentOptions = {};
+let modal = null;
+let selectedTokens = emptyTokens();
+let selectedDiscard = emptyTokens();
+
+const setupState = {
+  playerCount: 2,
+  players: [
+    { type: "human", name: "Player 1", difficulty: "easy" },
+    { type: "cpu", name: "CPU 1", difficulty: "easy" },
+    { type: "cpu", name: "CPU 2", difficulty: "easy" },
+    { type: "cpu", name: "CPU 3", difficulty: "easy" },
+  ],
+};
+
+export function initUI(nextHandlers) {
+  root = document.getElementById("app");
+  handlers = nextHandlers;
+  root.addEventListener("click", handleClick);
+  root.addEventListener("change", handleChange);
+  root.addEventListener("input", handleInput);
+}
+
+export function render(game, data, options = {}) {
+  currentGame = game;
+  currentData = data;
+  currentOptions = options;
+
+  if (!root) {
+    return;
+  }
+
+  if (!game) {
+    root.innerHTML = renderSetup(options);
+    return;
+  }
+
+  root.innerHTML = renderGame(game, data, options);
+}
+
+export function resetTransientState() {
+  modal = null;
+  selectedTokens = emptyTokens();
+  selectedDiscard = emptyTokens();
+}
+
+function handleClick(event) {
+  const target = event.target.closest("[data-action]");
+  if (!target) {
+    return;
+  }
+  const action = target.dataset.action;
+
+  if (action === "set-player-count") {
+    setupState.playerCount = Number(target.dataset.count);
+    render(currentGame, currentData, currentOptions);
+    return;
+  }
+
+  if (action === "start-game") {
+    resetTransientState();
+    handlers.onStartGame(getPlayerConfigs());
+    return;
+  }
+
+  if (action === "continue-game") {
+    resetTransientState();
+    handlers.onContinueGame();
+    return;
+  }
+
+  if (action === "new-game") {
+    if (window.confirm("現在のゲームを終了して新規ゲームに戻りますか？")) {
+      resetTransientState();
+      handlers.onNewGame();
+    }
+    return;
+  }
+
+  if (!currentGame || currentOptions.busy) {
+    return;
+  }
+
+  if (action === "select-token") {
+    addSelectedToken(target.dataset.color);
+    return;
+  }
+
+  if (action === "remove-token") {
+    removeSelectedToken(target.dataset.color);
+    return;
+  }
+
+  if (action === "confirm-tokens") {
+    confirmTokens();
+    return;
+  }
+
+  if (action === "cancel-tokens") {
+    selectedTokens = emptyTokens();
+    render(currentGame, currentData, currentOptions);
+    return;
+  }
+
+  if (action === "select-discard") {
+    addDiscardToken(target.dataset.color);
+    return;
+  }
+
+  if (action === "remove-discard") {
+    removeDiscardToken(target.dataset.color);
+    return;
+  }
+
+  if (action === "confirm-discard") {
+    confirmDiscard();
+    return;
+  }
+
+  if (action === "open-card") {
+    openCardModal(target);
+    return;
+  }
+
+  if (action === "open-deck") {
+    openDeckModal(target);
+    return;
+  }
+
+  if (action === "close-modal") {
+    modal = null;
+    render(currentGame, currentData, currentOptions);
+    return;
+  }
+
+  if (action === "buy-card") {
+    applyAndReset({
+      type: "buyCard",
+      playerId: getCurrentPlayer(currentGame).id,
+      source: modal.source,
+    });
+    return;
+  }
+
+  if (action === "reserve-card") {
+    applyAndReset({
+      type: "reserveCard",
+      playerId: getCurrentPlayer(currentGame).id,
+      source: modal.source,
+    });
+    return;
+  }
+
+  if (action === "claim-noble") {
+    applyAndReset({
+      type: "claimNoble",
+      playerId: getCurrentPlayer(currentGame).id,
+      nobleId: target.dataset.nobleId,
+    });
+  }
+}
+
+function handleChange(event) {
+  const target = event.target;
+  if (!target.dataset.field) {
+    return;
+  }
+
+  const index = Number(target.dataset.playerIndex);
+  const player = setupState.players[index];
+  if (!player) {
+    return;
+  }
+
+  player[target.dataset.field] = target.value;
+  if (target.dataset.field === "type") {
+    player.name = defaultName(index, target.value);
+  }
+  render(currentGame, currentData, currentOptions);
+}
+
+function handleInput(event) {
+  const target = event.target;
+  if (target.dataset.field !== "name") {
+    return;
+  }
+  const index = Number(target.dataset.playerIndex);
+  setupState.players[index].name = target.value;
+}
+
+function renderSetup(options) {
+  const rows = setupState.players
+    .slice(0, setupState.playerCount)
+    .map((player, index) => renderSetupPlayer(player, index))
+    .join("");
+
+  return `
+    <section class="setup-shell">
+      <div class="setup-panel">
+        <p class="eyebrow">GitHub Pages / Mouse only</p>
+        <h1>宝石の煌めき風</h1>
+        <div class="setup-controls">
+          <div class="field-group">
+            <span class="field-label">人数</span>
+            <div class="segmented" role="group" aria-label="人数">
+              ${[2, 3, 4]
+                .map(
+                  (count) => `
+                    <button class="segment ${setupState.playerCount === count ? "is-active" : ""}" type="button" data-action="set-player-count" data-count="${count}">
+                      ${count}人
+                    </button>
+                  `
+                )
+                .join("")}
+            </div>
+          </div>
+          <div class="player-configs">${rows}</div>
+          <div class="setup-actions">
+            <button class="primary-button" type="button" data-action="start-game">開始</button>
+            ${
+              options.hasSave
+                ? '<button class="ghost-button" type="button" data-action="continue-game">続きから</button>'
+                : ""
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderSetupPlayer(player, index) {
+  const isCpu = player.type === "cpu";
+  return `
+    <div class="setup-row">
+      <label class="setup-name">
+        <span>プレイヤー${index + 1}</span>
+        <input type="text" value="${escapeAttr(player.name)}" data-field="name" data-player-index="${index}" maxlength="16">
+      </label>
+      <label>
+        <span>種別</span>
+        <select data-field="type" data-player-index="${index}">
+          <option value="human" ${player.type === "human" ? "selected" : ""}>人間</option>
+          <option value="cpu" ${player.type === "cpu" ? "selected" : ""}>CPU</option>
+        </select>
+      </label>
+      <label class="${isCpu ? "" : "is-muted"}">
+        <span>強さ</span>
+        <select data-field="difficulty" data-player-index="${index}" ${isCpu ? "" : "disabled"}>
+          <option value="easy" ${player.difficulty === "easy" ? "selected" : ""}>easy</option>
+        </select>
+      </label>
+    </div>
+  `;
+}
+
+function renderGame(game, data, options) {
+  const player = getCurrentPlayer(game);
+  const winners = game.winnerIds.map((id) => game.players[id]).filter(Boolean);
+  const isCpuTurn = player.type === "cpu" && game.phase !== "gameOver";
+
+  return `
+    <div class="game-shell ${isCpuTurn ? "is-cpu-turn" : ""}">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Round ${game.round}</p>
+          <h1>宝石の煌めき風</h1>
+        </div>
+        <div class="topbar-status">
+          <span class="status-pill ${game.phase}">${phaseLabel(game.phase)}</span>
+          <span class="current-player">${escapeHtml(player.name)}</span>
+          <button class="icon-button" type="button" data-action="new-game" title="新規ゲーム">↺</button>
+        </div>
+      </header>
+      ${renderGameOver(game, winners)}
+      <main class="board-grid">
+        <section class="panel nobles-panel">
+          <div class="panel-title">
+            <h2>貴族</h2>
+            <span>${game.nobles.length}枚</span>
+          </div>
+          <div class="noble-grid">
+            ${game.nobles.map((noble) => renderNoble(game, noble)).join("")}
+          </div>
+        </section>
+        <section class="panel market-panel">
+          <div class="panel-title">
+            <h2>市場</h2>
+            <span>${data.cards.length} cards</span>
+          </div>
+          ${[3, 2, 1].map((level) => renderMarketRow(game, level)).join("")}
+        </section>
+        <section class="panel bank-panel">
+          <div class="panel-title">
+            <h2>トークン</h2>
+            <span>場</span>
+          </div>
+          ${renderBank(game)}
+        </section>
+        <section class="panel player-panel">
+          ${renderCurrentPlayer(game)}
+        </section>
+        <section class="panel rivals-panel">
+          <div class="panel-title">
+            <h2>全員</h2>
+            <span>${END_SCORE}点</span>
+          </div>
+          <div class="rival-list">
+            ${game.players.map((nextPlayer) => renderPlayerSummary(game, nextPlayer)).join("")}
+          </div>
+        </section>
+        <section class="panel log-panel">
+          <div class="panel-title">
+            <h2>ログ</h2>
+            <span>${game.log.length}</span>
+          </div>
+          <ol class="log-list">
+            ${game.log.map((entry) => `<li><time>${escapeHtml(entry.at)}</time>${escapeHtml(entry.text)}</li>`).join("")}
+          </ol>
+        </section>
+      </main>
+      ${renderModal(game)}
+      ${isCpuTurn || options.busy ? '<div class="busy-layer">CPU思考中...</div>' : ""}
+    </div>
+  `;
+}
+
+function renderGameOver(game, winners) {
+  if (game.phase !== "gameOver") {
+    return "";
+  }
+  return `
+    <section class="game-over-banner">
+      <div>
+        <p class="eyebrow">Game Over</p>
+        <h2>${winners.map((winner) => escapeHtml(winner.name)).join("、")} の勝利</h2>
+      </div>
+      <button class="primary-button" type="button" data-action="new-game">新規ゲーム</button>
+    </section>
+  `;
+}
+
+function renderNoble(game, noble) {
+  const canClaim =
+    game.phase === "noble" &&
+    game.pendingNobles.includes(noble.id) &&
+    getCurrentPlayer(game).type === "human" &&
+    !currentOptions.busy;
+  const tag = canClaim ? "button" : "div";
+  const attrs = canClaim
+    ? `type="button" data-action="claim-noble" data-noble-id="${escapeAttr(noble.id)}"`
+    : "";
+  return `
+    <${tag} class="noble-tile ${canClaim ? "is-claimable" : ""}" ${attrs}>
+      <strong>${noble.points}</strong>
+      <div class="cost-row">${renderCost(noble.requirement)}</div>
+    </${tag}>
+  `;
+}
+
+function renderMarketRow(game, level) {
+  const key = levelKey(level);
+  const deckCount = game.decks[key].length;
+  return `
+    <div class="market-row">
+      <button class="deck-button" type="button" data-action="open-deck" data-level="${level}" ${canUseAction(game) && deckCount > 0 ? "" : "disabled"}>
+        <span>Lv${level}</span>
+        <strong>${deckCount}</strong>
+      </button>
+      <div class="card-row">
+        ${game.market[key].map((card) => renderCardButton(game, card, { type: "market", level, cardId: card.id })).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderCardButton(game, card, source) {
+  const player = getCurrentPlayer(game);
+  const buyable = canUseAction(game) && canBuyCard(player, card);
+  const sourceAttrs = sourceToAttrs(source);
+  return `
+    <button class="dev-card card-${card.bonus} level-${card.level} ${buyable ? "is-buyable" : ""}" type="button" data-action="open-card" ${sourceAttrs} ${canUseAction(game) ? "" : "disabled"}>
+      ${renderCardFace(card)}
+    </button>
+  `;
+}
+
+function renderCardFace(card) {
+  return `
+    <span class="card-top">
+      <strong>${card.points > 0 ? card.points : ""}</strong>
+      <span class="bonus-dot gem-${card.bonus}">${COLOR_LABELS[card.bonus]}</span>
+    </span>
+    <span class="card-level">Lv${card.level}</span>
+    <span class="cost-row">${renderCost(card.cost)}</span>
+  `;
+}
+
+function renderBank(game) {
+  const isAction = canUseAction(game);
+  const canConfirm = isAction && canTakeTokens(game, selectedTokens);
+  const selectedCount = totalTokens(selectedTokens);
+
+  if (game.phase === "discard" && getCurrentPlayer(game).type === "human") {
+    return renderDiscardPanel(game);
+  }
+
+  return `
+    <div class="bank-grid">
+      ${ALL_TOKEN_COLORS.map((color) => {
+        const disabled = !isAction || color === "gold" || game.bank[color] <= 0;
+        return `
+          <button class="token-button gem-${color}" type="button" data-action="select-token" data-color="${color}" ${disabled ? "disabled" : ""}>
+            <span>${COLOR_LABELS[color]}</span>
+            <strong>${game.bank[color]}</strong>
+          </button>
+        `;
+      }).join("")}
+    </div>
+    <div class="selection-box">
+      <span>選択中</span>
+      <div class="selected-tokens">
+        ${renderSelectedTokens(selectedTokens, "remove-token")}
+      </div>
+      <div class="action-buttons">
+        <button class="primary-button" type="button" data-action="confirm-tokens" ${canConfirm ? "" : "disabled"}>取る</button>
+        <button class="ghost-button" type="button" data-action="cancel-tokens" ${selectedCount > 0 ? "" : "disabled"}>取消</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderDiscardPanel(game) {
+  const player = getCurrentPlayer(game);
+  const excess = totalTokens(player.tokens) - 10;
+  const canConfirm = totalTokens(selectedDiscard) === excess;
+  return `
+    <div class="discard-box">
+      <strong>${excess}枚返却</strong>
+      <div class="bank-grid">
+        ${ALL_TOKEN_COLORS.map((color) => `
+          <button class="token-button gem-${color}" type="button" data-action="select-discard" data-color="${color}" ${player.tokens[color] > selectedDiscard[color] ? "" : "disabled"}>
+            <span>${COLOR_LABELS[color]}</span>
+            <strong>${player.tokens[color]}</strong>
+          </button>
+        `).join("")}
+      </div>
+      <div class="selected-tokens">${renderSelectedTokens(selectedDiscard, "remove-discard")}</div>
+      <button class="primary-button full-width" type="button" data-action="confirm-discard" ${canConfirm ? "" : "disabled"}>返却</button>
+    </div>
+  `;
+}
+
+function renderSelectedTokens(tokens, removeAction) {
+  const normalized = normalizeTokens(tokens);
+  const parts = ALL_TOKEN_COLORS.filter((color) => normalized[color] > 0);
+  if (parts.length === 0) {
+    return '<span class="empty-selection">なし</span>';
+  }
+  return parts
+    .map(
+      (color) => `
+        <button class="selected-token gem-${color}" type="button" data-action="${removeAction}" data-color="${color}">
+          ${COLOR_LABELS[color]} ${normalized[color]}
+        </button>
+      `
+    )
+    .join("");
+}
+
+function renderCurrentPlayer(game) {
+  const player = getCurrentPlayer(game);
+  const bonuses = getPlayerBonuses(player);
+  return `
+    <div class="panel-title">
+      <h2>${escapeHtml(player.name)}</h2>
+      <span>${player.type === "cpu" ? "CPU" : "手番"}</span>
+    </div>
+    <div class="score-strip">
+      <div><span>点</span><strong>${player.score}</strong></div>
+      <div><span>カード</span><strong>${player.cards.length}</strong></div>
+      <div><span>予約</span><strong>${player.reserved.length}/3</strong></div>
+      <div><span>トークン</span><strong>${totalTokens(player.tokens)}/10</strong></div>
+    </div>
+    <div class="player-subsection">
+      <h3>ボーナス</h3>
+      <div class="bonus-list">
+        ${TOKEN_COLORS.map((color) => `<span class="bonus-badge gem-${color}">${COLOR_LABELS[color]} ${bonuses[color]}</span>`).join("")}
+      </div>
+    </div>
+    <div class="player-subsection">
+      <h3>所持</h3>
+      <div class="token-line">${renderTokenLine(player.tokens)}</div>
+    </div>
+    <div class="player-subsection">
+      <h3>予約</h3>
+      <div class="reserved-row">
+        ${renderReservedCards(game, player)}
+      </div>
+    </div>
+  `;
+}
+
+function renderReservedCards(game, player) {
+  if (player.reserved.length === 0) {
+    return '<span class="empty-selection">なし</span>';
+  }
+
+  if (player.type !== "human") {
+    return player.reserved.map(() => '<div class="card-back">予約</div>').join("");
+  }
+
+  return player.reserved
+    .map((card) => renderCardButton(game, card, { type: "reserved", cardId: card.id }))
+    .join("");
+}
+
+function renderPlayerSummary(game, player) {
+  const bonuses = getPlayerBonuses(player);
+  const isCurrent = player.id === game.currentPlayerIndex;
+  return `
+    <div class="rival-card ${isCurrent ? "is-current" : ""}">
+      <div>
+        <strong>${escapeHtml(player.name)}</strong>
+        <span>${player.type === "cpu" ? "CPU" : "人間"}</span>
+      </div>
+      <div class="mini-stats">
+        <span>${player.score}点</span>
+        <span>${player.cards.length}枚</span>
+        <span>予約${player.reserved.length}</span>
+      </div>
+      <div class="mini-bonuses">
+        ${TOKEN_COLORS.map((color) => `<span class="mini-bonus gem-${color}">${bonuses[color]}</span>`).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderModal(game) {
+  if (!modal) {
+    return "";
+  }
+
+  const player = getCurrentPlayer(game);
+  const source = modal.source;
+  const card = source.type === "deck" ? null : findCardBySource(game, source);
+  const canReserve = canUseAction(game) && source.type !== "reserved" && canReserveCard(game, player);
+  const canBuy = card && canUseAction(game) && canBuyCard(player, card);
+  const payment = card ? calculateAutoPayment(player, card) : null;
+
+  return `
+    <div class="modal-backdrop">
+      <div class="card-modal">
+        <button class="close-button" type="button" data-action="close-modal" title="閉じる">×</button>
+        ${
+          card
+            ? `
+              <div class="modal-card dev-card card-${card.bonus} level-${card.level}">
+                ${renderCardFace(card)}
+              </div>
+              <div class="modal-details">
+                <p class="eyebrow">Lv${card.level} / ${COLOR_NAMES[card.bonus]}</p>
+                <h2>${card.points}点カード</h2>
+                <p>支払い: ${payment ? formatTokenSelection(payment) : renderShortage(player, card)}</p>
+              </div>
+            `
+            : `
+              <div class="deck-preview">
+                <span>Lv${source.level}</span>
+                <strong>山札</strong>
+              </div>
+              <div class="modal-details">
+                <p class="eyebrow">Reserve</p>
+                <h2>山札から予約</h2>
+                <p>中身を見ずに一番上のカードを予約します。</p>
+              </div>
+            `
+        }
+        <div class="modal-actions">
+          ${
+            card
+              ? `<button class="primary-button" type="button" data-action="buy-card" ${canBuy ? "" : "disabled"}>購入</button>`
+              : ""
+          }
+          <button class="ghost-button" type="button" data-action="reserve-card" ${canReserve ? "" : "disabled"}>予約</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCost(cost) {
+  const normalized = normalizeTokens(cost);
+  const parts = TOKEN_COLORS.filter((color) => normalized[color] > 0);
+  if (parts.length === 0) {
+    return '<span class="cost-token free">0</span>';
+  }
+  return parts
+    .map((color) => `<span class="cost-token gem-${color}">${COLOR_LABELS[color]}${normalized[color]}</span>`)
+    .join("");
+}
+
+function renderTokenLine(tokens) {
+  const normalized = normalizeTokens(tokens);
+  return ALL_TOKEN_COLORS.map((color) => `<span class="token-chip gem-${color}">${COLOR_LABELS[color]} ${normalized[color]}</span>`).join("");
+}
+
+function renderShortage(player, card) {
+  const bonuses = getPlayerBonuses(player);
+  const shortage = [];
+  let goldNeed = 0;
+
+  TOKEN_COLORS.forEach((color) => {
+    const need = Math.max(0, card.cost[color] - bonuses[color]);
+    const missing = Math.max(0, need - player.tokens[color]);
+    if (missing > 0) {
+      shortage.push(`${COLOR_LABELS[color]}${missing}`);
+      goldNeed += missing;
+    }
+  });
+
+  if (goldNeed > player.tokens.gold) {
+    return `不足: ${shortage.join("・")}`;
+  }
+  return "購入可能";
+}
+
+function canUseAction(game) {
+  if (!game || currentOptions.busy) {
+    return false;
+  }
+  const player = getCurrentPlayer(game);
+  return player.type === "human" && game.phase === "action";
+}
+
+function addSelectedToken(color) {
+  if (!canUseAction(currentGame) || color === "gold") {
+    return;
+  }
+  const next = { ...selectedTokens };
+  next[color] = (next[color] || 0) + 1;
+  if (isPartialTakeSelectionValid(currentGame, next)) {
+    selectedTokens = normalizeTokens(next);
+    render(currentGame, currentData, currentOptions);
+  }
+}
+
+function removeSelectedToken(color) {
+  const next = { ...selectedTokens };
+  next[color] = Math.max(0, (next[color] || 0) - 1);
+  selectedTokens = normalizeTokens(next);
+  render(currentGame, currentData, currentOptions);
+}
+
+function confirmTokens() {
+  const player = getCurrentPlayer(currentGame);
+  if (!canTakeTokens(currentGame, selectedTokens)) {
+    return;
+  }
+  applyAndReset({
+    type: "takeTokens",
+    playerId: player.id,
+    tokens: selectedTokens,
+  });
+}
+
+function addDiscardToken(color) {
+  if (!currentGame || currentGame.phase !== "discard") {
+    return;
+  }
+  const player = getCurrentPlayer(currentGame);
+  const next = { ...selectedDiscard };
+  const excess = totalTokens(player.tokens) - 10;
+  if (next[color] >= player.tokens[color] || totalTokens(next) >= excess) {
+    return;
+  }
+  next[color] += 1;
+  selectedDiscard = normalizeTokens(next);
+  render(currentGame, currentData, currentOptions);
+}
+
+function removeDiscardToken(color) {
+  const next = { ...selectedDiscard };
+  next[color] = Math.max(0, next[color] - 1);
+  selectedDiscard = normalizeTokens(next);
+  render(currentGame, currentData, currentOptions);
+}
+
+function confirmDiscard() {
+  const player = getCurrentPlayer(currentGame);
+  const excess = totalTokens(player.tokens) - 10;
+  if (totalTokens(selectedDiscard) !== excess) {
+    return;
+  }
+  applyAndReset({
+    type: "discardTokens",
+    playerId: player.id,
+    tokens: selectedDiscard,
+  });
+}
+
+function applyAndReset(action) {
+  resetTransientState();
+  handlers.onApplyAction(action);
+}
+
+function openCardModal(target) {
+  if (!canUseAction(currentGame)) {
+    return;
+  }
+  modal = {
+    source: sourceFromDataset(target.dataset),
+  };
+  render(currentGame, currentData, currentOptions);
+}
+
+function openDeckModal(target) {
+  if (!canUseAction(currentGame)) {
+    return;
+  }
+  modal = {
+    source: {
+      type: "deck",
+      level: Number(target.dataset.level),
+    },
+  };
+  render(currentGame, currentData, currentOptions);
+}
+
+function findCardBySource(game, source) {
+  const player = getCurrentPlayer(game);
+  if (source.type === "market") {
+    return game.market[levelKey(source.level)].find((card) => card.id === source.cardId) || null;
+  }
+  if (source.type === "reserved") {
+    return player.reserved.find((card) => card.id === source.cardId) || null;
+  }
+  return null;
+}
+
+function sourceFromDataset(dataset) {
+  if (dataset.sourceType === "reserved") {
+    return {
+      type: "reserved",
+      cardId: dataset.cardId,
+    };
+  }
+  return {
+    type: "market",
+    level: Number(dataset.level),
+    cardId: dataset.cardId,
+  };
+}
+
+function sourceToAttrs(source) {
+  return Object.entries({
+    "data-source-type": source.type,
+    "data-level": source.level || "",
+    "data-card-id": source.cardId || "",
+  })
+    .map(([key, value]) => `${key}="${escapeAttr(String(value))}"`)
+    .join(" ");
+}
+
+function isPartialTakeSelectionValid(game, selection) {
+  const tokens = normalizeTokens(selection);
+  if (tokens.gold > 0 || totalTokens(tokens) > 3) {
+    return false;
+  }
+  if (TOKEN_COLORS.some((color) => tokens[color] > game.bank[color])) {
+    return false;
+  }
+
+  const selected = TOKEN_COLORS.filter((color) => tokens[color] > 0);
+  if (selected.length === 0) {
+    return true;
+  }
+
+  if (selected.length === 1 && tokens[selected[0]] <= 2) {
+    return tokens[selected[0]] === 1 || game.bank[selected[0]] >= 4;
+  }
+
+  return selected.every((color) => tokens[color] === 1);
+}
+
+function getPlayerConfigs() {
+  return setupState.players.slice(0, setupState.playerCount).map((player, index) => ({
+    type: player.type,
+    name: player.name || defaultName(index, player.type),
+    difficulty: player.difficulty || "easy",
+  }));
+}
+
+function defaultName(index, type) {
+  return type === "cpu" ? `CPU ${index + 1}` : `Player ${index + 1}`;
+}
+
+function phaseLabel(phase) {
+  return {
+    action: "手番",
+    discard: "返却",
+    noble: "貴族",
+    gameOver: "終了",
+  }[phase] || phase;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value);
+}

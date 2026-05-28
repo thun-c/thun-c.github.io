@@ -1,0 +1,847 @@
+:root {
+  color-scheme: light;
+  --ink: #20242a;
+  --muted: #69727f;
+  --line: #d9dee7;
+  --surface: #f7f8fa;
+  --panel: #ffffff;
+  --panel-strong: #f0f3f7;
+  --accent: #1c6c72;
+  --accent-strong: #155057;
+  --danger: #a63f49;
+  --white-gem: #f8f7ef;
+  --blue-gem: #3a7bb7;
+  --green-gem: #3f8f68;
+  --red-gem: #bd5154;
+  --black-gem: #32363d;
+  --gold-gem: #d8a83c;
+  --shadow: 0 12px 30px rgba(32, 36, 42, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled,
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.setup-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.setup-panel {
+  width: min(780px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+
+.setup-panel h1,
+.topbar h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: 0;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.setup-controls {
+  display: grid;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.field-group {
+  display: grid;
+  gap: 8px;
+}
+
+.field-label,
+.setup-row span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.segmented {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: min(300px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segment {
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  min-height: 42px;
+}
+
+.segment:last-child {
+  border-right: 0;
+}
+
+.segment.is-active {
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.player-configs {
+  display: grid;
+  gap: 10px;
+}
+
+.setup-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr 0.8fr;
+  gap: 10px;
+  padding: 12px;
+  background: var(--panel-strong);
+  border-radius: 8px;
+}
+
+.setup-row label {
+  display: grid;
+  gap: 5px;
+}
+
+.setup-row input,
+.setup-row select {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #ffffff;
+  color: var(--ink);
+}
+
+.is-muted {
+  opacity: 0.6;
+}
+
+.setup-actions,
+.action-buttons,
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.primary-button,
+.ghost-button,
+.icon-button {
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0 16px;
+  font-weight: 700;
+}
+
+.primary-button {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.ghost-button,
+.icon-button {
+  background: #ffffff;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.icon-button {
+  width: 40px;
+  padding: 0;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.game-shell {
+  min-height: 100vh;
+  padding: 16px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin: 0 auto 14px;
+  max-width: 1500px;
+}
+
+.topbar-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-pill,
+.current-player {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  font-weight: 700;
+}
+
+.status-pill.action {
+  color: var(--accent);
+}
+
+.status-pill.discard {
+  color: var(--danger);
+}
+
+.status-pill.noble {
+  color: #7c5b17;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(560px, 2.2fr) minmax(240px, 0.9fr);
+  grid-template-areas:
+    "nobles market bank"
+    "player player rivals"
+    "log log rivals";
+  gap: 14px;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  min-width: 0;
+}
+
+.nobles-panel {
+  grid-area: nobles;
+}
+
+.market-panel {
+  grid-area: market;
+}
+
+.bank-panel {
+  grid-area: bank;
+}
+
+.player-panel {
+  grid-area: player;
+}
+
+.rivals-panel {
+  grid-area: rivals;
+}
+
+.log-panel {
+  grid-area: log;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.panel-title h2,
+.player-subsection h3 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.panel-title span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.noble-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.noble-tile {
+  display: grid;
+  gap: 8px;
+  min-height: 104px;
+  border: 1px solid #cdbb84;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fbf6e7;
+  color: var(--ink);
+  text-align: left;
+}
+
+button.noble-tile.is-claimable {
+  outline: 3px solid rgba(216, 168, 60, 0.45);
+}
+
+.noble-tile strong {
+  font-size: 26px;
+}
+
+.market-row {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 10px;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+
+.market-row:last-child {
+  margin-bottom: 0;
+}
+
+.deck-button,
+.deck-preview {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  min-height: 128px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #e9edf3;
+  color: var(--ink);
+}
+
+.deck-button strong,
+.deck-preview strong {
+  font-size: 24px;
+}
+
+.card-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.dev-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  min-height: 128px;
+  border: 1px solid rgba(32, 36, 42, 0.2);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--ink);
+  text-align: left;
+  box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.12);
+}
+
+.dev-card.is-buyable {
+  outline: 3px solid rgba(28, 108, 114, 0.26);
+}
+
+.dev-card:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.card-white {
+  background: var(--white-gem);
+}
+
+.card-blue {
+  background: #dbeaf7;
+}
+
+.card-green {
+  background: #dcefe5;
+}
+
+.card-red {
+  background: #f3dedf;
+}
+
+.card-black {
+  background: #d9dde4;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-top strong {
+  min-width: 28px;
+  font-size: 26px;
+}
+
+.bonus-dot {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.card-level {
+  align-self: center;
+  color: rgba(32, 36, 42, 0.62);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.cost-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.cost-token,
+.token-chip,
+.bonus-badge,
+.mini-bonus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  font-weight: 800;
+}
+
+.cost-token {
+  min-width: 34px;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.cost-token.free {
+  background: #ffffff;
+}
+
+.gem-white {
+  background: var(--white-gem);
+  color: #22272f;
+}
+
+.gem-blue {
+  background: var(--blue-gem);
+  color: #ffffff;
+}
+
+.gem-green {
+  background: var(--green-gem);
+  color: #ffffff;
+}
+
+.gem-red {
+  background: var(--red-gem);
+  color: #ffffff;
+}
+
+.gem-black {
+  background: var(--black-gem);
+  color: #ffffff;
+}
+
+.gem-gold {
+  background: var(--gold-gem);
+  color: #2c2411;
+}
+
+.bank-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(88px, 1fr));
+  gap: 10px;
+}
+
+.token-button {
+  min-height: 74px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+}
+
+.token-button strong {
+  font-size: 24px;
+}
+
+.selection-box,
+.discard-box {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.selection-box > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.selected-tokens,
+.token-line,
+.bonus-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.selected-token {
+  min-height: 30px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  padding: 0 10px;
+  font-weight: 800;
+}
+
+.empty-selection {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.score-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.score-strip div {
+  min-height: 70px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  background: var(--panel-strong);
+  border-radius: 8px;
+}
+
+.score-strip span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.score-strip strong {
+  font-size: 24px;
+}
+
+.player-subsection {
+  margin-top: 14px;
+}
+
+.bonus-badge,
+.token-chip {
+  min-height: 30px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.reserved-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 150px));
+  gap: 10px;
+}
+
+.reserved-row .dev-card {
+  min-height: 112px;
+}
+
+.card-back {
+  min-height: 112px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #e9edf3;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.rival-list {
+  display: grid;
+  gap: 10px;
+}
+
+.rival-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.rival-card.is-current {
+  border-color: var(--accent);
+  background: #eef7f7;
+}
+
+.rival-card > div:first-child,
+.mini-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rival-card span,
+.mini-stats span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mini-bonuses {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.mini-bonus {
+  min-height: 24px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.log-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.log-list li {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.log-list time {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(21, 26, 32, 0.45);
+}
+
+.card-modal {
+  position: relative;
+  width: min(620px, 100%);
+  display: grid;
+  grid-template-columns: minmax(170px, 220px) 1fr;
+  gap: 18px;
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.modal-card {
+  min-height: 230px;
+}
+
+.modal-details {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  padding-right: 28px;
+}
+
+.modal-details h2,
+.modal-details p {
+  margin: 0;
+}
+
+.modal-actions {
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+}
+
+.game-over-banner {
+  max-width: 1500px;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fbf6e7;
+  border: 1px solid #d9c88f;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.game-over-banner h2 {
+  margin: 0;
+}
+
+.busy-layer {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 30;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 12px 16px;
+  font-weight: 800;
+}
+
+.error-panel p:last-child {
+  margin-bottom: 0;
+  color: var(--danger);
+}
+
+@media (max-width: 1100px) {
+  .board-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "bank"
+      "market"
+      "nobles"
+      "player"
+      "rivals"
+      "log";
+  }
+
+  .card-row {
+    grid-template-columns: repeat(2, minmax(128px, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .game-shell,
+  .setup-shell {
+    padding: 10px;
+  }
+
+  .topbar,
+  .game-over-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .topbar-status {
+    justify-content: space-between;
+  }
+
+  .setup-panel,
+  .panel {
+    padding: 12px;
+  }
+
+  .setup-row {
+    grid-template-columns: 1fr;
+  }
+
+  .market-row {
+    grid-template-columns: 1fr;
+  }
+
+  .deck-button {
+    min-height: 72px;
+  }
+
+  .card-row {
+    grid-template-columns: 1fr;
+  }
+
+  .score-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .bank-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .card-modal {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    justify-content: stretch;
+  }
+
+  .modal-actions button {
+    flex: 1;
+  }
+}
