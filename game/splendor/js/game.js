@@ -328,11 +328,11 @@ export function takeTokens(game, selection) {
 
 export function reserveCard(game, source) {
   const player = getCurrentPlayer(game);
-  if (!canReserveCard(game, player)) {
+  if (!canReserveCard(game, player) || !source || source.type !== "market") {
     return game;
   }
 
-  const result = removeCardFromSource(game, player, source, { allowDeck: true });
+  const result = removeCardFromSource(game, player, source);
   if (!result.card) {
     return game;
   }
@@ -369,7 +369,7 @@ export function buyCard(game, source) {
     return game;
   }
 
-  const result = removeCardFromSource(game, player, source, { allowDeck: false });
+  const result = removeCardFromSource(game, player, source);
   if (!result.card) {
     return game;
   }
@@ -646,14 +646,6 @@ function getReserveActions(game, playerId) {
         card,
       });
     });
-
-    if (game.decks[key].length > 0) {
-      actions.push({
-        type: "reserveCard",
-        playerId,
-        source: { type: "deck", level: Number(key.replace("level", "")) },
-      });
-    }
   });
 
   return actions;
@@ -729,15 +721,10 @@ function findCardBySource(game, player, source) {
     return player.reserved.find((card) => card.id === source.cardId) || null;
   }
 
-  if (source.type === "deck") {
-    const key = levelKey(source.level);
-    return game.decks[key][game.decks[key].length - 1] || null;
-  }
-
   return null;
 }
 
-function removeCardFromSource(game, player, source, options) {
+function removeCardFromSource(game, player, source) {
   if (!source) {
     return { card: null, sourceType: null };
   }
@@ -759,12 +746,6 @@ function removeCardFromSource(game, player, source, options) {
     }
     const [card] = player.reserved.splice(index, 1);
     return { card, sourceType: "reserved" };
-  }
-
-  if (source.type === "deck" && options.allowDeck) {
-    const key = levelKey(source.level);
-    const card = game.decks[key].pop() || null;
-    return { card, sourceType: "deck" };
   }
 
   return { card: null, sourceType: null };

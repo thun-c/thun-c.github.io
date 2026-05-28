@@ -156,11 +156,6 @@ function handleClick(event) {
     return;
   }
 
-  if (action === "open-deck") {
-    openDeckModal(target);
-    return;
-  }
-
   if (action === "close-modal") {
     modal = null;
     render(currentGame, currentData, currentOptions);
@@ -338,16 +333,7 @@ function renderGame(game, data, options) {
           ${renderBank(game)}
         </section>
         <section class="panel player-panel">
-          ${renderCurrentPlayer(game)}
-        </section>
-        <section class="panel rivals-panel">
-          <div class="panel-title">
-            <h2>全員</h2>
-            <span>${END_SCORE}点</span>
-          </div>
-          <div class="rival-list">
-            ${game.players.map((nextPlayer) => renderPlayerSummary(game, nextPlayer)).join("")}
-          </div>
+          ${renderPlayersPanel(game)}
         </section>
         <section class="panel log-panel">
           <div class="panel-title">
@@ -403,7 +389,7 @@ function renderMarketRow(game, level) {
   const deckCount = game.decks[key].length;
   return `
     <div class="market-row">
-      <button class="deck-button" type="button" data-action="open-deck" data-level="${level}" ${canUseAction(game) && deckCount > 0 ? "" : "disabled"}>
+      <button class="deck-button" type="button" data-action="deck-reserve-disabled" aria-disabled="true" data-disabled-reason="この版では山札からの予約は禁止です。公開されているカードだけ予約できます。">
         <span>Lv${level}</span>
         <strong>${deckCount}</strong>
       </button>
@@ -509,36 +495,54 @@ function renderSelectedTokens(tokens, removeAction) {
     .join("");
 }
 
-function renderCurrentPlayer(game) {
-  const player = getCurrentPlayer(game);
-  const bonuses = getPlayerBonuses(player);
+function renderPlayersPanel(game) {
   return `
     <div class="panel-title">
-      <h2>${escapeHtml(player.name)}</h2>
-      <span>${player.type === "cpu" ? "CPU" : "手番"}</span>
+      <h2>プレイヤー</h2>
+      <span>${END_SCORE}点</span>
     </div>
-    <div class="score-strip">
-      <div><span>点</span><strong>${player.score}</strong></div>
-      <div><span>カード</span><strong>${player.cards.length}</strong></div>
-      <div><span>予約</span><strong>${player.reserved.length}/3</strong></div>
-      <div><span>トークン</span><strong>${totalTokens(player.tokens)}/10</strong></div>
+    <div class="player-detail-list">
+      ${game.players.map((player) => renderPlayerDetail(game, player)).join("")}
     </div>
-    <div class="player-subsection">
-      <h3>ボーナス</h3>
-      <div class="bonus-list">
-        ${TOKEN_COLORS.map((color) => `<span class="bonus-badge gem-${color}">${COLOR_LABELS[color]} ${bonuses[color]}</span>`).join("")}
+  `;
+}
+
+function renderPlayerDetail(game, player) {
+  const bonuses = getPlayerBonuses(player);
+  const isCurrent = player.id === game.currentPlayerIndex;
+  return `
+    <article class="player-detail-card ${isCurrent ? "is-current" : ""}">
+      <div class="player-card-header">
+        <h3>${escapeHtml(player.name)}</h3>
+        <span>${isCurrent ? "手番" : player.type === "cpu" ? "CPU" : "人間"}</span>
       </div>
-    </div>
-    <div class="player-subsection">
-      <h3>所持</h3>
-      <div class="token-line">${renderTokenLine(player.tokens)}</div>
-    </div>
-    <div class="player-subsection">
-      <h3>予約</h3>
-      <div class="reserved-row">
-        ${renderReservedCards(game, player)}
+      <div class="score-strip">
+        <div><span>点</span><strong>${player.score}</strong></div>
+        <div><span>カード</span><strong>${player.cards.length}</strong></div>
+        <div><span>予約</span><strong>${player.reserved.length}/3</strong></div>
+        <div><span>トークン</span><strong>${totalTokens(player.tokens)}/10</strong></div>
       </div>
-    </div>
+      <div class="player-subsection">
+        <h4>ボーナス</h4>
+        <div class="bonus-list">
+          ${TOKEN_COLORS.map((color) => `<span class="bonus-badge gem-${color}">${COLOR_LABELS[color]} ${bonuses[color]}</span>`).join("")}
+        </div>
+      </div>
+      <div class="player-subsection">
+        <h4>所持</h4>
+        <div class="token-line">${renderTokenLine(player.tokens)}</div>
+      </div>
+      <div class="player-subsection">
+        <h4>貴族</h4>
+        <div class="noble-line">${renderClaimedNobles(player)}</div>
+      </div>
+      <div class="player-subsection">
+        <h4>予約</h4>
+        <div class="reserved-row">
+          ${renderReservedCards(game, player)}
+        </div>
+      </div>
+    </article>
   `;
 }
 
@@ -547,8 +551,8 @@ function renderReservedCards(game, player) {
     return '<span class="empty-selection">なし</span>';
   }
 
-  if (player.type !== "human") {
-    return player.reserved.map(() => '<div class="card-back">予約</div>').join("");
+  if (player.id !== game.currentPlayerIndex || player.type !== "human") {
+    return player.reserved.map((card) => renderStaticCard(card)).join("");
   }
 
   return player.reserved
@@ -556,25 +560,22 @@ function renderReservedCards(game, player) {
     .join("");
 }
 
-function renderPlayerSummary(game, player) {
-  const bonuses = getPlayerBonuses(player);
-  const isCurrent = player.id === game.currentPlayerIndex;
+function renderStaticCard(card) {
   return `
-    <div class="rival-card ${isCurrent ? "is-current" : ""}">
-      <div>
-        <strong>${escapeHtml(player.name)}</strong>
-        <span>${player.type === "cpu" ? "CPU" : "人間"}</span>
-      </div>
-      <div class="mini-stats">
-        <span>${player.score}点</span>
-        <span>${player.cards.length}枚</span>
-        <span>予約${player.reserved.length}</span>
-      </div>
-      <div class="mini-bonuses">
-        ${TOKEN_COLORS.map((color) => `<span class="mini-bonus gem-${color}">${bonuses[color]}</span>`).join("")}
-      </div>
+    <div class="dev-card card-${card.bonus} level-${card.level} is-static">
+      ${renderCardFace(card)}
     </div>
   `;
+}
+
+function renderClaimedNobles(player) {
+  if (player.nobles.length === 0) {
+    return '<span class="empty-selection">なし</span>';
+  }
+
+  return player.nobles
+    .map((noble) => `<span class="claimed-noble">${noble.points}点</span>`)
+    .join("");
 }
 
 function renderModal(game) {
@@ -588,7 +589,7 @@ function renderModal(game) {
 
   const player = getCurrentPlayer(game);
   const source = modal.source;
-  const card = source.type === "deck" ? null : findCardBySource(game, source);
+  const card = findCardBySource(game, source);
   const canReserve = canUseAction(game) && source.type !== "reserved" && canReserveCard(game, player);
   const canBuy = card && canUseAction(game) && canBuyCard(player, card);
   const payment = card ? calculateAutoPayment(player, card) : null;
@@ -609,17 +610,7 @@ function renderModal(game) {
                 <p>支払い: ${payment ? formatTokenSelection(payment) : renderShortage(player, card)}</p>
               </div>
             `
-            : `
-              <div class="deck-preview">
-                <span>Lv${source.level}</span>
-                <strong>山札</strong>
-              </div>
-              <div class="modal-details">
-                <p class="eyebrow">Reserve</p>
-                <h2>山札から予約</h2>
-                <p>中身を見ずに一番上のカードを予約します。</p>
-              </div>
-            `
+            : ""
         }
         <div class="modal-actions">
           ${
@@ -778,19 +769,6 @@ function openCardModal(target) {
   }
   modal = {
     source: sourceFromDataset(target.dataset),
-  };
-  render(currentGame, currentData, currentOptions);
-}
-
-function openDeckModal(target) {
-  if (!canUseAction(currentGame)) {
-    return;
-  }
-  modal = {
-    source: {
-      type: "deck",
-      level: Number(target.dataset.level),
-    },
   };
   render(currentGame, currentData, currentOptions);
 }

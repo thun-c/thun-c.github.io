@@ -244,8 +244,8 @@ button[aria-disabled="true"] {
   grid-template-columns: minmax(180px, 0.7fr) minmax(560px, 2.2fr) minmax(240px, 0.9fr);
   grid-template-areas:
     "nobles market bank"
-    "player player rivals"
-    "log log rivals";
+    "player player player"
+    "log log log";
   gap: 14px;
   max-width: 1500px;
   margin: 0 auto;
@@ -275,10 +275,6 @@ button[aria-disabled="true"] {
   grid-area: player;
 }
 
-.rivals-panel {
-  grid-area: rivals;
-}
-
 .log-panel {
   grid-area: log;
 }
@@ -292,7 +288,8 @@ button[aria-disabled="true"] {
 }
 
 .panel-title h2,
-.player-subsection h3 {
+.player-card-header h3,
+.player-subsection h4 {
   margin: 0;
   font-size: 16px;
   letter-spacing: 0;
@@ -384,9 +381,18 @@ button.noble-tile.is-claimable {
   outline: 3px solid rgba(28, 108, 114, 0.26);
 }
 
+.dev-card.is-static {
+  cursor: default;
+}
+
 .dev-card:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: var(--shadow);
+}
+
+.dev-card.is-static:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .card-white {
@@ -448,7 +454,7 @@ button.noble-tile.is-claimable {
 .cost-token,
 .token-chip,
 .bonus-badge,
-.mini-bonus {
+.claimed-noble {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -583,12 +589,64 @@ button.noble-tile.is-claimable {
   margin-top: 14px;
 }
 
+.player-detail-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.player-detail-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.player-detail-card.is-current {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(28, 108, 114, 0.16);
+  background: #eef7f7;
+}
+
+.player-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.player-card-header span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 10px;
+}
+
 .bonus-badge,
-.token-chip {
+.token-chip,
+.claimed-noble {
   min-height: 30px;
   border-radius: 999px;
   padding: 0 10px;
   font-size: 12px;
+}
+
+.noble-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.claimed-noble {
+  background: #fbf6e7;
+  border-color: #d9c88f;
 }
 
 .reserved-row {
@@ -599,61 +657,6 @@ button.noble-tile.is-claimable {
 
 .reserved-row .dev-card {
   min-height: 112px;
-}
-
-.card-back {
-  min-height: 112px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #e9edf3;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.rival-list {
-  display: grid;
-  gap: 10px;
-}
-
-.rival-card {
-  display: grid;
-  gap: 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px;
-}
-
-.rival-card.is-current {
-  border-color: var(--accent);
-  background: #eef7f7;
-}
-
-.rival-card > div:first-child,
-.mini-stats {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.rival-card span,
-.mini-stats span {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.mini-bonuses {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
-}
-
-.mini-bonus {
-  min-height: 24px;
-  border-radius: 999px;
-  font-size: 12px;
 }
 
 .log-list {
@@ -807,7 +810,6 @@ button.noble-tile.is-claimable {
       "market"
       "nobles"
       "player"
-      "rivals"
       "log";
   }
 
