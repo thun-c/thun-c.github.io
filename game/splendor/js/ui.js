@@ -442,7 +442,6 @@ function renderCardFace(card) {
       <strong>${card.points > 0 ? card.points : ""}</strong>
       <span class="bonus-dot gem-${card.bonus}">${COLOR_LABELS[card.bonus]}</span>
     </span>
-    <span class="card-level">Lv${card.level}</span>
     <span class="cost-row">${renderCost(card.cost)}</span>
   `;
 }

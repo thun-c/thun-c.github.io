@@ -406,7 +406,7 @@ button.noble-tile.is-claimable {
   isolation: isolate;
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr;
   gap: 10px;
   aspect-ratio: 5 / 7;
   min-height: 0;
@@ -437,6 +437,10 @@ button.noble-tile.is-claimable {
 .dev-card > * {
   position: relative;
   z-index: 1;
+}
+
+.dev-card > .cost-row {
+  align-self: end;
 }
 
 .dev-card.is-buyable {
@@ -507,8 +511,7 @@ button.noble-tile.is-claimable {
   font-size: 26px;
 }
 
-.card-top strong:not(:empty),
-.card-level {
+.card-top strong:not(:empty) {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.86);
   box-shadow: 0 1px 4px rgba(32, 36, 42, 0.08);
@@ -527,15 +530,6 @@ button.noble-tile.is-claimable {
   border: 1px solid rgba(0, 0, 0, 0.16);
   font-size: 12px;
   font-weight: 800;
-}
-
-.card-level {
-  align-self: center;
-  color: rgba(32, 36, 42, 0.62);
-  font-size: 13px;
-  font-weight: 800;
-  justify-self: start;
-  padding: 2px 7px;
 }
 
 .cost-row {
