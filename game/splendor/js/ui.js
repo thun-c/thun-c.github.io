@@ -430,7 +430,7 @@ function renderCardButton(game, card, source) {
   const buyable = canUseAction(game) && canBuyCard(player, card);
   const sourceAttrs = sourceToAttrs(source);
   return `
-    <button class="dev-card card-${card.bonus} level-${card.level} ${buyable ? "is-buyable" : ""}" type="button" data-action="open-card" ${sourceAttrs} ${canUseAction(game) ? "" : "disabled"}>
+    <button class="dev-card card-${card.bonus} level-${card.level} ${buyable ? "is-buyable" : ""}" type="button" data-action="open-card" ${sourceAttrs} ${cardArtAttrs(card)} ${canUseAction(game) ? "" : "disabled"}>
       ${renderCardFace(card)}
     </button>
   `;
@@ -603,7 +603,7 @@ function renderReservedCards(game, player) {
 
 function renderStaticCard(card) {
   return `
-    <div class="dev-card card-${card.bonus} level-${card.level} is-static">
+    <div class="dev-card card-${card.bonus} level-${card.level} is-static" ${cardArtAttrs(card)}>
       ${renderCardFace(card)}
     </div>
   `;
@@ -642,7 +642,7 @@ function renderModal(game) {
         ${
           card
             ? `
-              <div class="modal-card dev-card card-${card.bonus} level-${card.level}">
+              <div class="modal-card dev-card card-${card.bonus} level-${card.level}" ${cardArtAttrs(card)}>
                 ${renderCardFace(card)}
               </div>
               <div class="modal-details">
@@ -855,6 +855,46 @@ function sourceToAttrs(source) {
   })
     .map(([key, value]) => `${key}="${escapeAttr(String(value))}"`)
     .join(" ");
+}
+
+function cardArtAttrs(card) {
+  const art = getCardArt(card);
+  if (!art) {
+    return "";
+  }
+
+  const src = sanitizeCardArtSrc(art.src);
+  if (!src) {
+    return "";
+  }
+
+  const url = new URL(`../${src}`, import.meta.url).href;
+  const position = sanitizeCssPosition(art.position) || "50% 50%";
+  return `style="--card-art-image: url('${escapeAttr(url)}'); --card-art-position: ${escapeAttr(position)};"`;
+}
+
+function getCardArt(card) {
+  const variants = currentData?.cardArt?.variantsByColor?.[card.bonus] || [];
+  if (variants.length === 0) {
+    return null;
+  }
+  return variants[stableHash(card.id) % variants.length];
+}
+
+function stableHash(value) {
+  return String(value)
+    .split("")
+    .reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 0);
+}
+
+function sanitizeCardArtSrc(value) {
+  const src = String(value || "");
+  return /^assets\/card-art\/[-a-z0-9_/]+\.(png|jpe?g|webp)$/i.test(src) ? src : null;
+}
+
+function sanitizeCssPosition(value) {
+  const position = String(value || "").trim();
+  return /^[-a-z0-9.%\s]+$/i.test(position) ? position : null;
 }
 
 function isPartialTakeSelectionValid(game, selection) {

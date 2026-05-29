@@ -30,17 +30,25 @@ async function boot() {
 }
 
 async function loadData() {
-  const [cardsResponse, noblesResponse] = await Promise.all([
+  const [cardsResponse, noblesResponse, cardArtResponse] = await Promise.all([
     fetch(new URL("../data/cards.json", import.meta.url)),
     fetch(new URL("../data/nobles.json", import.meta.url)),
+    fetch(new URL("../data/card-art.json", import.meta.url)),
   ]);
 
-  if (!cardsResponse.ok || !noblesResponse.ok) {
+  if (!cardsResponse.ok || !noblesResponse.ok || !cardArtResponse.ok) {
     throw new Error("データファイルを読み込めませんでした。");
   }
 
-  const [cardData, nobleData] = await Promise.all([cardsResponse.json(), noblesResponse.json()]);
-  return normalizeGameData(cardData, nobleData);
+  const [cardData, nobleData, cardArtData] = await Promise.all([
+    cardsResponse.json(),
+    noblesResponse.json(),
+    cardArtResponse.json(),
+  ]);
+  return {
+    ...normalizeGameData(cardData, nobleData),
+    cardArt: cardArtData,
+  };
 }
 
 function startGame(playerConfigs) {

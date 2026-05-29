@@ -394,22 +394,48 @@ button.noble-tile.is-claimable {
 
 .card-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  grid-template-columns: repeat(4, minmax(120px, 170px));
+  justify-content: start;
   gap: 10px;
 }
 
 .dev-card {
+  --card-art-image: none;
+  --card-art-position: 50% 50%;
   position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 10px;
-  min-height: 128px;
+  aspect-ratio: 5 / 7;
+  min-height: 0;
   border: 1px solid rgba(32, 36, 42, 0.2);
   border-radius: 8px;
   padding: 10px;
+  background-image: var(--card-art-image);
+  background-position: var(--card-art-position);
+  background-repeat: no-repeat;
+  background-size: cover;
   color: var(--ink);
   text-align: left;
   box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.12);
+}
+
+.dev-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0.04) 42%, rgba(255, 255, 255, 0.48)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04) 58%, rgba(255, 255, 255, 0.22));
+}
+
+.dev-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .dev-card.is-buyable {
@@ -431,23 +457,23 @@ button.noble-tile.is-claimable {
 }
 
 .card-white {
-  background: var(--white-gem);
+  background-color: var(--white-gem);
 }
 
 .card-blue {
-  background: #dbeaf7;
+  background-color: #dbeaf7;
 }
 
 .card-green {
-  background: #dcefe5;
+  background-color: #dcefe5;
 }
 
 .card-red {
-  background: #f3dedf;
+  background-color: #f3dedf;
 }
 
 .card-black {
-  background: #d9dde4;
+  background-color: #d9dde4;
 }
 
 .card-top {
@@ -460,6 +486,17 @@ button.noble-tile.is-claimable {
 .card-top strong {
   min-width: 28px;
   font-size: 26px;
+}
+
+.card-top strong:not(:empty),
+.card-level {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 1px 4px rgba(32, 36, 42, 0.08);
+}
+
+.card-top strong:not(:empty) {
+  padding: 0 7px;
 }
 
 .bonus-dot {
@@ -478,6 +515,8 @@ button.noble-tile.is-claimable {
   color: rgba(32, 36, 42, 0.62);
   font-size: 13px;
   font-weight: 800;
+  justify-self: start;
+  padding: 2px 7px;
 }
 
 .cost-row {
@@ -877,7 +916,7 @@ button.noble-tile.is-claimable {
   }
 
   .card-row {
-    grid-template-columns: repeat(2, minmax(128px, 1fr));
+    grid-template-columns: repeat(2, minmax(128px, 170px));
   }
 }
 
@@ -915,7 +954,7 @@ button.noble-tile.is-claimable {
   }
 
   .card-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(128px, 170px);
   }
 
   .score-strip {

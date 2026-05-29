@@ -1,0 +1,75 @@
+{
+  "note": "開発カードの背景画像設定です。各色の配列に画像を追加すると、同色カード内でカードIDから安定的に割り当てられます。",
+  "variantsByColor": {
+    "white": [
+      {
+        "src": "assets/card-art/white-oracle-01.png",
+        "position": "50% 38%"
+      },
+      {
+        "src": "assets/card-art/white-oracle-02.png",
+        "position": "52% 40%"
+      },
+      {
+        "src": "assets/card-art/white-oracle-03.png",
+        "position": "48% 38%"
+      }
+    ],
+    "blue": [
+      {
+        "src": "assets/card-art/blue-mage-01.png",
+        "position": "50% 36%"
+      },
+      {
+        "src": "assets/card-art/blue-mage-02.png",
+        "position": "52% 38%"
+      },
+      {
+        "src": "assets/card-art/blue-mage-03.png",
+        "position": "48% 36%"
+      }
+    ],
+    "green": [
+      {
+        "src": "assets/card-art/green-ranger-01.png",
+        "position": "50% 38%"
+      },
+      {
+        "src": "assets/card-art/green-ranger-02.png",
+        "position": "52% 40%"
+      },
+      {
+        "src": "assets/card-art/green-ranger-03.png",
+        "position": "48% 38%"
+      }
+    ],
+    "red": [
+      {
+        "src": "assets/card-art/red-smith-01.png",
+        "position": "50% 38%"
+      },
+      {
+        "src": "assets/card-art/red-smith-02.png",
+        "position": "52% 40%"
+      },
+      {
+        "src": "assets/card-art/red-smith-03.png",
+        "position": "48% 38%"
+      }
+    ],
+    "black": [
+      {
+        "src": "assets/card-art/black-rogue-01.png",
+        "position": "50% 38%"
+      },
+      {
+        "src": "assets/card-art/black-rogue-02.png",
+        "position": "52% 40%"
+      },
+      {
+        "src": "assets/card-art/black-rogue-03.png",
+        "position": "48% 38%"
+      }
+    ]
+  }
+}
