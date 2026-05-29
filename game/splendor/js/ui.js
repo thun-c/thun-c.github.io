@@ -641,7 +641,7 @@ function renderModal(game) {
         ${
           card
             ? `
-              <div class="modal-card dev-card card-${card.bonus} level-${card.level}" ${cardArtAttrs(card)}>
+              <div class="modal-card dev-card card-${card.bonus} level-${card.level} ${canBuy ? "is-buyable" : ""}" ${cardArtAttrs(card)}>
                 ${renderCardFace(card)}
               </div>
               <div class="modal-details">
