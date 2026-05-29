@@ -5,11 +5,19 @@
       {
         "src": "assets/card-art/white-03.png",
         "position": "50% 38%"
+      },
+      {
+        "src": "assets/card-art/white-02.png",
+        "position": "50% 36%"
       }
     ],
     "blue": [
       {
         "src": "assets/card-art/blue-01.png",
+        "position": "50% 36%"
+      },
+      {
+        "src": "assets/card-art/blue-02.png",
         "position": "50% 36%"
       },
       {
@@ -21,6 +29,10 @@
       {
         "src": "assets/card-art/green-03.png",
         "position": "50% 38%"
+      },
+      {
+        "src": "assets/card-art/green-02.png",
+        "position": "50% 36%"
       }
     ],
     "red": [
@@ -32,6 +44,10 @@
     "black": [
       {
         "src": "assets/card-art/black-01.png",
+        "position": "50% 38%"
+      },
+      {
+        "src": "assets/card-art/black-02.png",
         "position": "50% 38%"
       },
       {
