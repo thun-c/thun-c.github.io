@@ -46,6 +46,10 @@ export function scoreAction(playerView, action, difficulty = "easy") {
     return scoreTakeTokensAction(playerView, action, difficulty);
   }
 
+  if (action.type === "passTurn") {
+    return -1000;
+  }
+
   return 0;
 }
 

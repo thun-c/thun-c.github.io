@@ -11,6 +11,7 @@ import {
   emptyTokens,
   formatTokenSelection,
   getCurrentPlayer,
+  getLegalActions,
   getPlayerBonuses,
   levelKey,
   normalizeTokens,
@@ -133,6 +134,14 @@ function handleClick(event) {
   if (action === "cancel-tokens") {
     selectedTokens = emptyTokens();
     render(currentGame, currentData, currentOptions);
+    return;
+  }
+
+  if (action === "pass-turn") {
+    applyAndReset({
+      type: "passTurn",
+      playerId: getCurrentPlayer(currentGame).id,
+    });
     return;
   }
 
@@ -346,7 +355,7 @@ function renderGame(game, data, options) {
         </section>
       </main>
       ${renderModal(game)}
-      ${isCpuTurn || options.busy ? '<div class="busy-layer">CPU思考中...</div>' : ""}
+      ${options.busy ? '<div class="busy-layer">CPU思考中...</div>' : ""}
     </div>
   `;
 }
@@ -427,6 +436,7 @@ function renderBank(game) {
   const canConfirm = isAction && canTakeTokens(game, selectedTokens);
   const confirmReason = canConfirm ? null : getConfirmTokensDisabledReason(game, isAction);
   const selectedCount = totalTokens(selectedTokens);
+  const passAction = getPassAction(game);
 
   if (game.phase === "discard" && getCurrentPlayer(game).type === "human") {
     return renderDiscardPanel(game);
@@ -452,7 +462,17 @@ function renderBank(game) {
       <div class="action-buttons">
         <button class="primary-button" type="button" data-action="confirm-tokens" ${disabledAttrs(confirmReason)}>取る</button>
         <button class="ghost-button" type="button" data-action="cancel-tokens" ${selectedCount > 0 ? "" : "disabled"}>取消</button>
+        ${
+          passAction
+            ? '<button class="ghost-button" type="button" data-action="pass-turn">パス</button>'
+            : ""
+        }
       </div>
+      ${
+        passAction
+          ? '<p class="action-note">現在選べる合法手がないため、パスして次のプレイヤーに進めます。</p>'
+          : ""
+      }
     </div>
   `;
 }
@@ -691,6 +711,14 @@ function canUseAction(game) {
   }
   const player = getCurrentPlayer(game);
   return player.type === "human" && game.phase === "action";
+}
+
+function getPassAction(game) {
+  if (!game || !canUseAction(game)) {
+    return null;
+  }
+  const player = getCurrentPlayer(game);
+  return getLegalActions(game, player.id).find((action) => action.type === "passTurn") || null;
 }
 
 function addSelectedToken(color) {

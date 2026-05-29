@@ -112,14 +112,21 @@ function continueCpuTurnIfNeeded() {
   busy = true;
   renderNow();
   cpuTimer = window.setTimeout(() => {
-    const action = chooseCpuAction(game, currentPlayer.id, currentPlayer.difficulty);
-    if (!action) {
+    try {
+      const action = chooseCpuAction(game, currentPlayer.id, currentPlayer.difficulty);
+      if (!action) {
+        busy = false;
+        renderNow();
+        return;
+      }
+      game = applyAction(game, action);
+      saveGame();
+    } catch (error) {
+      console.error(error);
       busy = false;
       renderNow();
       return;
     }
-    game = applyAction(game, action);
-    saveGame();
     busy = false;
     renderNow();
     continueCpuTurnIfNeeded();

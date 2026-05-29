@@ -291,6 +291,9 @@ export function getLegalActions(game, playerId) {
   actions.push(...getTakeTokenActions(game, playerId));
   actions.push(...getBuyActions(game, playerId));
   actions.push(...getReserveActions(game, playerId));
+  if (actions.length === 0) {
+    actions.push({ type: "passTurn", playerId });
+  }
   return actions;
 }
 
@@ -318,6 +321,9 @@ export function applyAction(game, action) {
   }
   if (action.type === "claimNoble") {
     return claimNoble(game, action.nobleId);
+  }
+  if (action.type === "passTurn") {
+    return passTurn(game);
   }
 
   return game;
@@ -432,6 +438,15 @@ export function claimNoble(game, nobleId) {
   }
   claimNobleInternal(game, nobleId);
   game.pendingNobles = [];
+  return completeTurn(game);
+}
+
+export function passTurn(game) {
+  if (game.phase !== "action") {
+    return game;
+  }
+  const player = getCurrentPlayer(game);
+  addLog(game, `${player.name} は合法手がないため手番をパスしました。`);
   return completeTurn(game);
 }
 
