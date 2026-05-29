@@ -431,6 +431,7 @@ button.noble-tile.is-claimable {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0.04) 42%, rgba(255, 255, 255, 0.48)),
     linear-gradient(90deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04) 58%, rgba(255, 255, 255, 0.22));
+  transition: opacity 140ms ease;
 }
 
 .dev-card > * {
@@ -439,7 +440,25 @@ button.noble-tile.is-claimable {
 }
 
 .dev-card.is-buyable {
-  outline: 3px solid rgba(28, 108, 114, 0.26);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(216, 168, 60, 0.55), 0 0 0 7px rgba(28, 108, 114, 0.24), var(--shadow);
+  outline: 3px solid rgba(216, 168, 60, 0.84);
+  outline-offset: 2px;
+}
+
+.dev-card.is-buyable::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  z-index: 2;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgba(28, 108, 114, 0.42);
+  pointer-events: none;
+}
+
+.dev-card.is-buyable::after {
+  opacity: 0;
 }
 
 .dev-card.is-static {
