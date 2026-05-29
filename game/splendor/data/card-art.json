@@ -59,16 +59,8 @@
     ],
     "black": [
       {
-        "src": "assets/card-art/black-rogue-01.png",
+        "src": "assets/card-art/black-01.png",
         "position": "50% 38%"
-      },
-      {
-        "src": "assets/card-art/black-rogue-02.png",
-        "position": "52% 40%"
-      },
-      {
-        "src": "assets/card-art/black-rogue-03.png",
-        "position": "48% 38%"
       }
     ]
   }
