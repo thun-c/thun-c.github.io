@@ -317,6 +317,7 @@ function renderGame(game, data, options) {
         </div>
       </header>
       ${renderGameOver(game, winners)}
+      ${renderNobleChoiceBanner(game)}
       <main class="board-grid">
         <section class="panel nobles-panel">
           <div class="panel-title">
@@ -375,19 +376,34 @@ function renderGameOver(game, winners) {
   `;
 }
 
+function renderNobleChoiceBanner(game) {
+  if (game.phase !== "noble") {
+    return "";
+  }
+
+  const player = getCurrentPlayer(game);
+  return `
+    <section class="choice-banner">
+      <div>
+        <p class="eyebrow">Noble Visit</p>
+        <h2>${escapeHtml(player.name)} は獲得する貴族を1枚選んでください</h2>
+      </div>
+      <span>${game.pendingNobles.length}枚から選択</span>
+    </section>
+  `;
+}
+
 function renderNoble(game, noble) {
-  const canClaim =
-    game.phase === "noble" &&
-    game.pendingNobles.includes(noble.id) &&
-    getCurrentPlayer(game).type === "human" &&
-    !currentOptions.busy;
+  const isPending = game.phase === "noble" && game.pendingNobles.includes(noble.id);
+  const canClaim = isPending && getCurrentPlayer(game).type === "human" && !currentOptions.busy;
   const tag = canClaim ? "button" : "div";
   const attrs = canClaim
     ? `type="button" data-action="claim-noble" data-noble-id="${escapeAttr(noble.id)}"`
     : "";
   return `
-    <${tag} class="noble-tile ${canClaim ? "is-claimable" : ""}" ${attrs}>
+    <${tag} class="noble-tile ${isPending ? "is-pending" : ""} ${canClaim ? "is-claimable" : ""}" ${attrs}>
       <strong>${noble.points}</strong>
+      ${isPending ? '<span class="choice-label">選択可</span>' : ""}
       <div class="cost-row">${renderCost(noble.requirement)}</div>
     </${tag}>
   `;
