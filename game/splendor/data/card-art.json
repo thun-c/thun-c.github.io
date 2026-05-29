@@ -3,64 +3,40 @@
   "variantsByColor": {
     "white": [
       {
-        "src": "assets/card-art/white-oracle-01.png",
+        "src": "assets/card-art/white-03.png",
         "position": "50% 38%"
-      },
-      {
-        "src": "assets/card-art/white-oracle-02.png",
-        "position": "52% 40%"
-      },
-      {
-        "src": "assets/card-art/white-oracle-03.png",
-        "position": "48% 38%"
       }
     ],
     "blue": [
       {
-        "src": "assets/card-art/blue-mage-01.png",
+        "src": "assets/card-art/blue-01.png",
         "position": "50% 36%"
       },
       {
-        "src": "assets/card-art/blue-mage-02.png",
-        "position": "52% 38%"
-      },
-      {
-        "src": "assets/card-art/blue-mage-03.png",
+        "src": "assets/card-art/blue-03.png",
         "position": "48% 36%"
       }
     ],
     "green": [
       {
-        "src": "assets/card-art/green-ranger-01.png",
+        "src": "assets/card-art/green-03.png",
         "position": "50% 38%"
-      },
-      {
-        "src": "assets/card-art/green-ranger-02.png",
-        "position": "52% 40%"
-      },
-      {
-        "src": "assets/card-art/green-ranger-03.png",
-        "position": "48% 38%"
       }
     ],
     "red": [
       {
-        "src": "assets/card-art/red-smith-01.png",
+        "src": "assets/card-art/red-03.png",
         "position": "50% 38%"
-      },
-      {
-        "src": "assets/card-art/red-smith-02.png",
-        "position": "52% 40%"
-      },
-      {
-        "src": "assets/card-art/red-smith-03.png",
-        "position": "48% 38%"
       }
     ],
     "black": [
       {
         "src": "assets/card-art/black-01.png",
         "position": "50% 38%"
+      },
+      {
+        "src": "assets/card-art/black-03.png",
+        "position": "48% 36%"
       }
     ]
   }
