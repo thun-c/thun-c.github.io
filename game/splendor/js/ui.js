@@ -873,7 +873,12 @@ function cardArtAttrs(card) {
 }
 
 function getCardArt(card) {
-  const variants = currentData?.cardArt?.variantsByColor?.[card.bonus] || [];
+  const variantsByLevel = currentData?.cardArt?.variantsByColorAndLevel?.[card.bonus] || {};
+  const variants =
+    variantsByLevel[String(card.level)] ||
+    variantsByLevel[`level${card.level}`] ||
+    currentData?.cardArt?.variantsByColor?.[card.bonus] ||
+    [];
   if (variants.length === 0) {
     return null;
   }
