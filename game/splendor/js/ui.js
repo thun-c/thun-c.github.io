@@ -242,7 +242,7 @@ function renderSetup(options) {
     <section class="setup-shell">
       <div class="setup-panel">
         <p class="eyebrow">GitHub Pages / Mouse only</p>
-        <h1>宝石の煌めき風</h1>
+        <h1>アルカナ・ロード</h1>
         <div class="setup-controls">
           <div class="field-group">
             <span class="field-label">人数</span>
@@ -308,7 +308,7 @@ function renderGame(game, data, options) {
       <header class="topbar">
         <div>
           <p class="eyebrow">Round ${game.round}</p>
-          <h1>宝石の煌めき風</h1>
+          <h1>アルカナ・ロード</h1>
         </div>
         <div class="topbar-status">
           <span class="status-pill ${game.phase}">${phaseLabel(game.phase)}</span>
@@ -330,14 +330,14 @@ function renderGame(game, data, options) {
         </section>
         <section class="panel market-panel">
           <div class="panel-title">
-            <h2>市場</h2>
+            <h2>ギルド</h2>
             <span>${data.cards.length} cards</span>
           </div>
           ${[3, 2, 1].map((level) => renderMarketRow(game, level)).join("")}
         </section>
         <section class="panel bank-panel">
           <div class="panel-title">
-            <h2>トークン</h2>
+            <h2>マナ</h2>
             <span>場</span>
           </div>
           ${renderBank(game)}
@@ -560,16 +560,16 @@ function renderPlayerDetail(game, player) {
         <div><span>点</span><strong>${player.score}</strong></div>
         <div><span>カード</span><strong>${player.cards.length}</strong></div>
         <div><span>予約</span><strong>${player.reserved.length}/3</strong></div>
-        <div><span>トークン</span><strong>${totalTokens(player.tokens)}/10</strong></div>
+        <div><span>マナ</span><strong>${totalTokens(player.tokens)}/10</strong></div>
       </div>
       <div class="player-subsection">
-        <h4>ボーナス</h4>
+        <h4>兵</h4>
         <div class="bonus-list">
           ${TOKEN_COLORS.map((color) => `<span class="bonus-badge gem-${color}">${COLOR_LABELS[color]} ${bonuses[color]}</span>`).join("")}
         </div>
       </div>
       <div class="player-subsection">
-        <h4>所持</h4>
+        <h4>マナ</h4>
         <div class="token-line">${renderTokenLine(player.tokens)}</div>
       </div>
       <div class="player-subsection">
@@ -738,7 +738,7 @@ function getPassAction(game) {
 
 function addSelectedToken(color) {
   if (!canUseAction(currentGame) || color === "gold") {
-    showNotice(getTokenButtonDisabledReason(currentGame, color, canUseAction(currentGame)) || "今はそのトークンを選べません。");
+    showNotice(getTokenButtonDisabledReason(currentGame, color, canUseAction(currentGame)) || "今はそのマナを選べません。");
     return;
   }
   const next = { ...selectedTokens };
@@ -941,7 +941,7 @@ function getTokenButtonDisabledReason(game, color, isAction) {
     return getActionBlockedReason(game);
   }
   if (color === "gold") {
-    return "黄金は直接取れません。カード予約時に残っていれば1枚受け取ります。";
+    return "全は直接取れません。カード予約時に残っていれば1枚受け取ります。";
   }
   if (game.bank[color] <= 0) {
     return `${COLOR_LABELS[color]}は場に残っていません。`;
@@ -978,7 +978,7 @@ function getActionBlockedReason(game) {
     return "CPUの手番中です。";
   }
   if (game.phase === "discard") {
-    return "先にトークンを10枚以下に返却してください。";
+    return "先にマナを10枚以下に返却してください。";
   }
   if (game.phase === "noble") {
     return "先に獲得する貴族を選んでください。";
@@ -986,7 +986,7 @@ function getActionBlockedReason(game) {
   if (game.phase === "gameOver") {
     return "ゲームは終了しています。";
   }
-  return "今はトークンを取るタイミングではありません。";
+  return "今はマナを取るタイミングではありません。";
 }
 
 function disabledAttrs(reason) {

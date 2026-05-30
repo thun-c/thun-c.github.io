@@ -9,7 +9,7 @@ export const COLOR_LABELS = {
   green: "精",
   red: "炎",
   black: "闇",
-  gold: "黄金",
+  gold: "全",
 };
 
 export const COLOR_NAMES = {
@@ -18,7 +18,7 @@ export const COLOR_NAMES = {
   green: "精",
   red: "炎",
   black: "闇",
-  gold: "黄金",
+  gold: "全",
 };
 
 export function normalizeGameData(cardData, nobleData) {
@@ -366,7 +366,7 @@ export function reserveCard(game, source) {
     drawToMarket(game, levelKey(result.card.level));
   }
 
-  const goldText = goldTaken ? "黄金1枚も受け取りました" : "黄金は残っていませんでした";
+  const goldText = goldTaken ? "全1枚も受け取りました" : "全は残っていませんでした";
   addLog(game, `${player.name} がカードを予約し、${goldText}。`);
   return finishMainAction(game);
 }
