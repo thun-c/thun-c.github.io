@@ -4,20 +4,20 @@ export const LEVEL_KEYS = ["level1", "level2", "level3"];
 export const END_SCORE = 15;
 
 export const COLOR_LABELS = {
-  white: "白",
-  blue: "青",
-  green: "緑",
-  red: "赤",
-  black: "黒",
+  white: "光",
+  blue: "雷",
+  green: "精",
+  red: "炎",
+  black: "闇",
   gold: "黄金",
 };
 
 export const COLOR_NAMES = {
-  white: "ダイヤ",
-  blue: "サファイア",
-  green: "エメラルド",
-  red: "ルビー",
-  black: "オニキス",
+  white: "光",
+  blue: "雷",
+  green: "精",
+  red: "炎",
+  black: "闇",
   gold: "黄金",
 };
 

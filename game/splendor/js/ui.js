@@ -470,7 +470,7 @@ function renderBank(game) {
       }).join("")}
     </div>
     <div class="selection-box">
-      <span>選択中: 異なる3色、または同じ色2枚</span>
+      <span>選択中: 異なる3種類、または同じ種類2枚</span>
       <div class="selected-tokens">
         ${renderSelectedTokens(selectedTokens, "remove-token")}
       </div>
@@ -923,14 +923,14 @@ function getPartialTakeSelectionReason(game, selection) {
     if (tokens[selected[0]] === 1 || game.bank[selected[0]] >= 4) {
       return null;
     }
-    return `同じ宝石2枚を取るには、その色が場に4枚以上必要です。現在は${game.bank[selected[0]]}枚です。`;
+    return `同じ種類を2枚取るには、その種類が場に4枚以上必要です。現在は${game.bank[selected[0]]}枚です。`;
   }
 
   if (selected.length <= 3 && selected.every((color) => tokens[color] === 1)) {
     return null;
   }
 
-  return "取れる組み合わせは、異なる3色または同じ色2枚です。";
+  return "取れる組み合わせは、異なる3種類または同じ種類2枚です。";
 }
 
 function getTokenButtonDisabledReason(game, color, isAction) {
@@ -959,15 +959,15 @@ function getConfirmTokensDisabledReason(game, isAction) {
 
   const selectedCount = totalTokens(selectedTokens);
   if (selectedCount === 0) {
-    return "異なる3色、または同じ色2枚を選んでください。";
+    return "異なる3種類、または同じ種類2枚を選んでください。";
   }
 
   const selectedColors = TOKEN_COLORS.filter((color) => selectedTokens[color] > 0);
   if (selectedColors.length === 1 && selectedTokens[selectedColors[0]] === 1) {
-    return "同じ色をもう1枚選ぶか、異なる3色になるように選んでください。";
+    return "同じ種類をもう1枚選ぶか、異なる3種類になるように選んでください。";
   }
   if (selectedColors.length === 2 && selectedColors.every((color) => selectedTokens[color] === 1)) {
-    return "異なる宝石を取る場合は3色選んでください。";
+    return "異なる種類を取る場合は3種類選んでください。";
   }
 
   return getPartialTakeSelectionReason(game, selectedTokens) || "この組み合わせでは取れません。";
