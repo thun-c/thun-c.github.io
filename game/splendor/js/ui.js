@@ -319,28 +319,30 @@ function renderGame(game, data, options) {
       ${renderGameOver(game, winners)}
       ${renderNobleChoiceBanner(game)}
       <main class="board-grid">
-        <section class="panel nobles-panel">
-          <div class="panel-title">
-            <h2>貴族</h2>
-            <span>${game.nobles.length}枚</span>
-          </div>
-          <div class="noble-grid">
-            ${game.nobles.map((noble) => renderNoble(game, noble)).join("")}
-          </div>
-        </section>
+        <div class="left-column">
+          <section class="panel nobles-panel">
+            <div class="panel-title">
+              <h2>貴族</h2>
+              <span>${game.nobles.length}枚</span>
+            </div>
+            <div class="noble-grid">
+              ${game.nobles.map((noble) => renderNoble(game, noble)).join("")}
+            </div>
+          </section>
+          <section class="panel bank-panel">
+            <div class="panel-title">
+              <h2>マナ</h2>
+              <span>場</span>
+            </div>
+            ${renderBank(game)}
+          </section>
+        </div>
         <section class="panel market-panel">
           <div class="panel-title">
             <h2>ギルド</h2>
             <span>${data.cards.length} cards</span>
           </div>
           ${[3, 2, 1].map((level) => renderMarketRow(game, level)).join("")}
-        </section>
-        <section class="panel bank-panel">
-          <div class="panel-title">
-            <h2>マナ</h2>
-            <span>場</span>
-          </div>
-          ${renderBank(game)}
         </section>
         <section class="panel player-panel">
           ${renderPlayersPanel(game)}
@@ -550,38 +552,45 @@ function getPlayersInTurnOrder(game) {
 function renderPlayerDetail(game, player) {
   const bonuses = getPlayerBonuses(player);
   const isCurrent = player.id === game.currentPlayerIndex;
+  const hasReserved = player.reserved.length > 0;
   return `
-    <article class="player-detail-card ${isCurrent ? "is-current" : ""}">
-      <div class="player-card-header">
-        <h3>${escapeHtml(player.name)}</h3>
-        <span>${isCurrent ? "手番" : player.type === "cpu" ? "CPU" : "人間"}</span>
-      </div>
-      <div class="score-strip">
-        <div><span>点</span><strong>${player.score}</strong></div>
-        <div><span>カード</span><strong>${player.cards.length}</strong></div>
-        <div><span>予約</span><strong>${player.reserved.length}/3</strong></div>
-        <div><span>マナ</span><strong>${totalTokens(player.tokens)}/10</strong></div>
-      </div>
-      <div class="player-subsection">
-        <h4>兵</h4>
-        <div class="bonus-list">
-          ${TOKEN_COLORS.map((color) => `<span class="bonus-badge gem-${color}">${COLOR_LABELS[color]} ${bonuses[color]}</span>`).join("")}
+    <article class="player-detail-card ${isCurrent ? "is-current" : ""} ${hasReserved ? "has-reserved" : ""}">
+      <div class="player-core">
+        <div class="player-card-header">
+          <h3>${escapeHtml(player.name)}</h3>
+          <span>${isCurrent ? "手番" : player.type === "cpu" ? "CPU" : "人間"}</span>
         </div>
-      </div>
-      <div class="player-subsection">
-        <h4>マナ</h4>
-        <div class="token-line">${renderTokenLine(player.tokens)}</div>
-      </div>
-      <div class="player-subsection">
-        <h4>貴族</h4>
-        <div class="noble-line">${renderClaimedNobles(player)}</div>
-      </div>
-      <div class="player-subsection">
-        <h4>予約</h4>
-        <div class="reserved-row">
-          ${renderReservedCards(game, player)}
+        <div class="score-strip">
+          <div><span>点</span><strong>${player.score}</strong></div>
+          <div><span>カード</span><strong>${player.cards.length}</strong></div>
+          <div><span>予約</span><strong>${player.reserved.length}/3</strong></div>
+          <div><span>マナ</span><strong>${totalTokens(player.tokens)}/10</strong></div>
         </div>
+        <div class="player-subsection">
+          <h4>兵</h4>
+          <div class="bonus-list">
+            ${TOKEN_COLORS.map((color) => `<span class="bonus-badge gem-${color}">${COLOR_LABELS[color]} ${bonuses[color]}</span>`).join("")}
+          </div>
+        </div>
+        <div class="player-subsection">
+          <h4>マナ</h4>
+          <div class="token-line">${renderTokenLine(player.tokens)}</div>
+        </div>
+        ${player.nobles.length > 0 ? `
+          <div class="player-subsection">
+            <h4>貴族</h4>
+            <div class="noble-line">${renderClaimedNobles(player)}</div>
+          </div>
+        ` : ""}
       </div>
+      ${hasReserved ? `
+        <div class="player-reserved-shelf">
+          <h4>予約</h4>
+          <div class="reserved-row">
+            ${renderReservedCards(game, player)}
+          </div>
+        </div>
+      ` : ""}
     </article>
   `;
 }
