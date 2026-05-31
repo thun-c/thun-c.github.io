@@ -442,7 +442,7 @@ function renderCardFace(card) {
   return `
     <span class="card-top">
       <strong>${card.points > 0 ? card.points : ""}</strong>
-      <span class="bonus-dot gem-${card.bonus}">${COLOR_LABELS[card.bonus]}</span>
+      <span class="bonus-dot gem-${card.bonus}" aria-label="${COLOR_LABELS[card.bonus]}"></span>
     </span>
     <span class="cost-row">${renderCost(card.cost)}</span>
   `;
@@ -464,8 +464,7 @@ function renderBank(game) {
       ${ALL_TOKEN_COLORS.map((color) => {
         const tokenReason = getTokenButtonDisabledReason(game, color, isAction);
         return `
-          <button class="token-button gem-${color}" type="button" data-action="select-token" data-color="${color}" ${disabledAttrs(tokenReason)}>
-            <span>${COLOR_LABELS[color]}</span>
+          <button class="token-button gem-${color}" type="button" data-action="select-token" data-color="${color}" aria-label="${COLOR_LABELS[color]} ${game.bank[color]}枚" ${disabledAttrs(tokenReason)}>
             <strong>${game.bank[color]}</strong>
           </button>
         `;
@@ -503,8 +502,7 @@ function renderDiscardPanel(game) {
       <strong>${excess}枚返却</strong>
       <div class="bank-grid">
         ${ALL_TOKEN_COLORS.map((color) => `
-          <button class="token-button gem-${color}" type="button" data-action="select-discard" data-color="${color}" ${player.tokens[color] > selectedDiscard[color] ? "" : "disabled"}>
-            <span>${COLOR_LABELS[color]}</span>
+          <button class="token-button gem-${color}" type="button" data-action="select-discard" data-color="${color}" aria-label="${COLOR_LABELS[color]} ${player.tokens[color]}枚" ${player.tokens[color] > selectedDiscard[color] ? "" : "disabled"}>
             <strong>${player.tokens[color]}</strong>
           </button>
         `).join("")}
@@ -524,8 +522,8 @@ function renderSelectedTokens(tokens, removeAction) {
   return parts
     .map(
       (color) => `
-        <button class="selected-token gem-${color}" type="button" data-action="${removeAction}" data-color="${color}">
-          ${COLOR_LABELS[color]} ${normalized[color]}
+        <button class="selected-token gem-${color}" type="button" data-action="${removeAction}" data-color="${color}" aria-label="${COLOR_LABELS[color]} ${normalized[color]}枚を外す">
+          ${normalized[color]}
         </button>
       `
     )
@@ -569,7 +567,7 @@ function renderPlayerDetail(game, player) {
         <div class="player-subsection">
           <h4>兵</h4>
           <div class="bonus-list">
-            ${TOKEN_COLORS.map((color) => `<span class="bonus-badge gem-${color}">${COLOR_LABELS[color]} ${bonuses[color]}</span>`).join("")}
+            ${TOKEN_COLORS.map((color) => `<span class="bonus-badge gem-${color}" aria-label="${COLOR_LABELS[color]} ${bonuses[color]}">${bonuses[color]}</span>`).join("")}
           </div>
         </div>
         <div class="player-subsection">
@@ -700,13 +698,13 @@ function renderCost(cost) {
     return '<span class="cost-token free">0</span>';
   }
   return parts
-    .map((color) => `<span class="cost-token gem-${color}">${COLOR_LABELS[color]}${normalized[color]}</span>`)
+    .map((color) => `<span class="cost-token gem-${color}" aria-label="${COLOR_LABELS[color]} ${normalized[color]}">${normalized[color]}</span>`)
     .join("");
 }
 
 function renderTokenLine(tokens) {
   const normalized = normalizeTokens(tokens);
-  return ALL_TOKEN_COLORS.map((color) => `<span class="token-chip gem-${color}">${COLOR_LABELS[color]} ${normalized[color]}</span>`).join("");
+  return ALL_TOKEN_COLORS.map((color) => `<span class="token-chip gem-${color}" aria-label="${COLOR_LABELS[color]} ${normalized[color]}">${normalized[color]}</span>`).join("");
 }
 
 function renderShortage(player, card) {
