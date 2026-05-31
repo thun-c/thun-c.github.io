@@ -460,7 +460,7 @@ function renderBank(game) {
   }
 
   return `
-    <div class="bank-grid">
+    <div class="bank-grid bank-pool-grid">
       ${ALL_TOKEN_COLORS.map((color) => {
         const tokenReason = getTokenButtonDisabledReason(game, color, isAction);
         return `

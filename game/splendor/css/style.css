@@ -705,6 +705,41 @@ button.noble-tile.is-claimable {
   background-size: cover, 86px 86px;
 }
 
+.bank-pool-grid .token-button {
+  position: relative;
+  min-height: 72px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.bank-pool-grid .token-button::before {
+  content: "";
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-image: var(--mana-icon);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: drop-shadow(0 3px 4px rgba(32, 36, 42, 0.2));
+}
+
+.bank-pool-grid .token-button:hover:not(:disabled)::before {
+  transform: translateY(-1px);
+}
+
+.bank-pool-grid .token-button strong {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--mana-fg);
+  text-shadow: var(--mana-text-shadow);
+}
+
 .left-column .token-button {
   min-height: 58px;
 }
