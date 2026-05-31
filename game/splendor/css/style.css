@@ -579,21 +579,25 @@ button.noble-tile.is-claimable {
 .cost-token.gem-green,
 .cost-token.gem-red,
 .cost-token.gem-black,
+.cost-token.gem-gold,
 .token-chip.gem-white,
 .token-chip.gem-blue,
 .token-chip.gem-green,
 .token-chip.gem-red,
 .token-chip.gem-black,
+.token-chip.gem-gold,
 .bonus-badge.gem-white,
 .bonus-badge.gem-blue,
 .bonus-badge.gem-green,
 .bonus-badge.gem-red,
 .bonus-badge.gem-black,
+.bonus-badge.gem-gold,
 .selected-token.gem-white,
 .selected-token.gem-blue,
 .selected-token.gem-green,
 .selected-token.gem-red,
-.selected-token.gem-black {
+.selected-token.gem-black,
+.selected-token.gem-gold {
   background-size: cover, 44px 44px;
 }
 
@@ -605,7 +609,8 @@ button.noble-tile.is-claimable {
 .gem-blue,
 .gem-green,
 .gem-red,
-.gem-black {
+.gem-black,
+.gem-gold {
   background-color: var(--mana-bg);
   background-image:
     linear-gradient(180deg, var(--mana-highlight), var(--mana-shadow)),
@@ -663,8 +668,12 @@ button.noble-tile.is-claimable {
 }
 
 .gem-gold {
-  background: var(--gold-gem);
-  color: #2c2411;
+  --mana-bg: var(--gold-gem);
+  --mana-fg: #ffffff;
+  --mana-highlight: rgba(255, 245, 196, 0.2);
+  --mana-shadow: rgba(85, 47, 5, 0.34);
+  --mana-text-shadow: 0 1px 3px rgba(38, 19, 0, 0.84);
+  --mana-icon: url("../assets/mana-icons/gold.png");
 }
 
 .bank-grid {
@@ -691,7 +700,8 @@ button.noble-tile.is-claimable {
 .token-button.gem-blue,
 .token-button.gem-green,
 .token-button.gem-red,
-.token-button.gem-black {
+.token-button.gem-black,
+.token-button.gem-gold {
   background-size: cover, 86px 86px;
 }
 
