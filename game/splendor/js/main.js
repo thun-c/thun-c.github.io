@@ -45,10 +45,62 @@ async function loadData() {
     noblesResponse.json(),
     cardArtResponse.json(),
   ]);
+  await preloadCardArtAssets(cardArtData);
   return {
     ...normalizeGameData(cardData, nobleData),
     cardArt: cardArtData,
   };
+}
+
+async function preloadCardArtAssets(cardArtData) {
+  const sources = collectCardArtSources(cardArtData);
+  if (sources.length === 0) {
+    return;
+  }
+
+  const results = await Promise.allSettled(
+    sources.map((src) => preloadImage(new URL(`../${src}`, import.meta.url).href))
+  );
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      console.warn(`カード画像を先読みできませんでした: ${sources[index]}`, result.reason);
+    }
+  });
+}
+
+function collectCardArtSources(cardArtData) {
+  const sources = new Set();
+  const addVariant = (variant) => {
+    const src = sanitizeCardArtSrc(variant?.src);
+    if (src) {
+      sources.add(src);
+    }
+  };
+
+  Object.values(cardArtData?.variantsByColorAndLevel || {}).forEach((byLevel) => {
+    Object.values(byLevel || {}).forEach((variants) => {
+      (variants || []).forEach(addVariant);
+    });
+  });
+  Object.values(cardArtData?.variantsByColor || {}).forEach((variants) => {
+    (variants || []).forEach(addVariant);
+  });
+  return [...sources];
+}
+
+function preloadImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => resolve(url);
+    image.onerror = () => reject(new Error(url));
+    image.src = url;
+  });
+}
+
+function sanitizeCardArtSrc(value) {
+  const src = String(value || "");
+  return /^assets\/card-art\/[-a-z0-9_/]+\.(png|jpe?g|webp)$/i.test(src) ? src : null;
 }
 
 function startGame(playerConfigs) {
