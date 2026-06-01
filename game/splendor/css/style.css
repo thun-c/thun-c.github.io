@@ -697,7 +697,7 @@ button.noble-tile.is-claimable {
   --mana-highlight: rgba(255, 255, 255, 0.72);
   --mana-shadow: rgba(255, 246, 206, 0.18);
   --mana-text-shadow: 0 1px 2px rgba(255, 255, 255, 0.82);
-  --mana-icon: url("../assets/mana-icons/white.png");
+  --mana-icon: url("../assets/mana-icons/white.webp");
 }
 
 .gem-blue {
@@ -706,7 +706,7 @@ button.noble-tile.is-claimable {
   --mana-highlight: rgba(58, 123, 183, 0.26);
   --mana-shadow: rgba(7, 37, 86, 0.34);
   --mana-text-shadow: 0 1px 3px rgba(0, 18, 42, 0.72);
-  --mana-icon: url("../assets/mana-icons/blue.png");
+  --mana-icon: url("../assets/mana-icons/blue.webp");
 }
 
 .gem-green {
@@ -715,7 +715,7 @@ button.noble-tile.is-claimable {
   --mana-highlight: rgba(63, 143, 104, 0.24);
   --mana-shadow: rgba(11, 66, 41, 0.34);
   --mana-text-shadow: 0 1px 3px rgba(0, 34, 18, 0.72);
-  --mana-icon: url("../assets/mana-icons/green.png");
+  --mana-icon: url("../assets/mana-icons/green.webp");
 }
 
 .gem-red {
@@ -724,7 +724,7 @@ button.noble-tile.is-claimable {
   --mana-highlight: rgba(189, 81, 84, 0.24);
   --mana-shadow: rgba(89, 12, 18, 0.36);
   --mana-text-shadow: 0 1px 3px rgba(53, 0, 5, 0.72);
-  --mana-icon: url("../assets/mana-icons/red.png");
+  --mana-icon: url("../assets/mana-icons/red.webp");
 }
 
 .gem-black {
@@ -733,7 +733,7 @@ button.noble-tile.is-claimable {
   --mana-highlight: rgba(66, 59, 88, 0.22);
   --mana-shadow: rgba(6, 7, 13, 0.46);
   --mana-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.86);
-  --mana-icon: url("../assets/mana-icons/black.png");
+  --mana-icon: url("../assets/mana-icons/black.webp");
 }
 
 .gem-gold {
@@ -742,7 +742,7 @@ button.noble-tile.is-claimable {
   --mana-highlight: rgba(255, 245, 196, 0.2);
   --mana-shadow: rgba(85, 47, 5, 0.34);
   --mana-text-shadow: 0 1px 3px rgba(38, 19, 0, 0.84);
-  --mana-icon: url("../assets/mana-icons/gold.png");
+  --mana-icon: url("../assets/mana-icons/gold.webp");
 }
 
 .bank-grid {

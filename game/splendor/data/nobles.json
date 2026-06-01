@@ -4,7 +4,7 @@
       "id": "N-01",
       "name": "白雷公レイシア",
       "art": {
-        "src": "assets/noble-art/n-01-white-lightning-crest-v2.png",
+        "src": "assets/noble-art/n-01-white-lightning-crest-v2.webp",
         "position": "50% 50%"
       },
       "points": 3,
@@ -14,7 +14,7 @@
       "id": "N-02",
       "name": "聖樹侯アルヴィナ",
       "art": {
-        "src": "assets/noble-art/n-02-white-green-crest.png",
+        "src": "assets/noble-art/n-02-white-green-crest.webp",
         "position": "50% 50%"
       },
       "points": 3,
@@ -24,7 +24,7 @@
       "id": "N-03",
       "name": "暁焔公セラフィル",
       "art": {
-        "src": "assets/noble-art/n-03-white-red-crest.png",
+        "src": "assets/noble-art/n-03-white-red-crest.webp",
         "position": "50% 50%"
       },
       "points": 3,
@@ -34,7 +34,7 @@
       "id": "N-04",
       "name": "月蝕卿ノクタリア",
       "art": {
-        "src": "assets/noble-art/n-04-white-black-crest.png",
+        "src": "assets/noble-art/n-04-white-black-crest.webp",
         "position": "50% 50%"
       },
       "points": 3,
@@ -44,7 +44,7 @@
       "id": "N-05",
       "name": "霧林侯エルセイン",
       "art": {
-        "src": "assets/noble-art/n-05-blue-green-crest.png",
+        "src": "assets/noble-art/n-05-blue-green-crest.webp",
         "position": "50% 50%"
       },
       "points": 3,
@@ -54,7 +54,7 @@
       "id": "N-06",
       "name": "雷焔侯ヴァルクス",
       "art": {
-        "src": "assets/noble-art/n-06-blue-red-crest.png",
+        "src": "assets/noble-art/n-06-blue-red-crest.webp",
         "position": "50% 50%"
       },
       "points": 3,
@@ -64,7 +64,7 @@
       "id": "N-07",
       "name": "深翠の星詠みミレイア",
       "art": {
-        "src": "assets/noble-art/n-07-blue-green-black-crest.png",
+        "src": "assets/noble-art/n-07-blue-green-black-crest.webp",
         "position": "50% 50%"
       },
       "points": 3,
@@ -74,7 +74,7 @@
       "id": "N-08",
       "name": "翠炎公ラグナール",
       "art": {
-        "src": "assets/noble-art/n-08-green-red-crest.png",
+        "src": "assets/noble-art/n-08-green-red-crest.webp",
         "position": "50% 50%"
       },
       "points": 3,
@@ -84,7 +84,7 @@
       "id": "N-09",
       "name": "黒荊侯モルヴァン",
       "art": {
-        "src": "assets/noble-art/n-09-green-red-black-crest.png",
+        "src": "assets/noble-art/n-09-green-red-black-crest.webp",
         "position": "50% 50%"
       },
       "points": 3,
@@ -94,7 +94,7 @@
       "id": "N-10",
       "name": "灰冠の断罪侯イグレイン",
       "art": {
-        "src": "assets/noble-art/n-10-white-red-black-crest.png",
+        "src": "assets/noble-art/n-10-white-red-black-crest.webp",
         "position": "50% 50%"
       },
       "points": 3,
