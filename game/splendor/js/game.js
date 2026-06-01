@@ -559,11 +559,41 @@ function normalizeCard(card) {
 }
 
 function normalizeNoble(noble) {
-  return {
+  const normalized = {
     id: noble.id,
     points: Number(noble.points || 3),
     requirement: normalizeGems(noble.requirement),
   };
+
+  if (noble.name) {
+    normalized.name = String(noble.name);
+  }
+
+  const art = normalizeNobleArt(noble.art);
+  if (art) {
+    normalized.art = art;
+  }
+
+  return normalized;
+}
+
+function normalizeNobleArt(art) {
+  if (!art) {
+    return null;
+  }
+
+  if (typeof art === "string") {
+    return { src: art };
+  }
+
+  const normalized = {};
+  if (art.src) {
+    normalized.src = String(art.src);
+  }
+  if (art.position) {
+    normalized.position = String(art.position);
+  }
+  return normalized.src ? normalized : null;
 }
 
 function normalizeDecks(decks) {

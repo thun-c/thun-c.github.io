@@ -42,6 +42,7 @@ export function initUI(nextHandlers) {
   root = document.getElementById("app");
   handlers = nextHandlers;
   root.addEventListener("click", handleClick);
+  root.addEventListener("error", handleAssetError, true);
   root.addEventListener("change", handleChange);
   root.addEventListener("input", handleInput);
 }
@@ -202,6 +203,20 @@ function handleClick(event) {
       nobleId: target.dataset.nobleId,
     });
   }
+}
+
+function handleAssetError(event) {
+  const image = event.target;
+  if (!(image instanceof HTMLImageElement) || !image.classList.contains("noble-art")) {
+    return;
+  }
+
+  const tile = image.closest(".noble-tile");
+  if (tile) {
+    tile.classList.remove("has-art");
+    tile.removeAttribute("style");
+  }
+  image.remove();
 }
 
 function handleChange(event) {
@@ -402,9 +417,15 @@ function renderNoble(game, noble) {
   const attrs = canClaim
     ? `type="button" data-action="claim-noble" data-noble-id="${escapeAttr(noble.id)}"`
     : "";
+  const art = getNobleArtData(noble);
+  const displayName = getNobleDisplayName(noble);
+  const artAttrs = art
+    ? `style="--noble-art-position: ${escapeAttr(art.position)};" aria-label="${escapeAttr(displayName || `${noble.points}点の貴族`)}"`
+    : "";
   return `
-    <${tag} class="noble-tile ${isPending ? "is-pending" : ""} ${canClaim ? "is-claimable" : ""}" ${attrs}>
-      <strong>${noble.points}</strong>
+    <${tag} class="noble-tile ${art ? "has-art" : ""} ${isPending ? "is-pending" : ""} ${canClaim ? "is-claimable" : ""}" ${attrs} ${artAttrs}>
+      ${art ? `<img class="noble-art" src="${escapeAttr(art.url)}" alt="" loading="lazy" decoding="async">` : ""}
+      <strong class="noble-points">${noble.points}</strong>
       ${isPending ? '<span class="choice-label">選択可</span>' : ""}
       <div class="cost-row">${renderCost(noble.requirement)}</div>
     </${tag}>
@@ -863,6 +884,28 @@ function sourceToAttrs(source) {
     .join(" ");
 }
 
+function getNobleArtData(noble) {
+  const metadata = getNobleMetadata(noble);
+  const art = metadata?.art || noble.art;
+  const src = sanitizeNobleArtSrc(typeof art === "string" ? art : art?.src);
+  if (!src) {
+    return null;
+  }
+
+  return {
+    url: new URL(`../${src}`, import.meta.url).href,
+    position: sanitizeCssPosition(art?.position) || "50% 50%",
+  };
+}
+
+function getNobleDisplayName(noble) {
+  return noble.name || getNobleMetadata(noble)?.name || "";
+}
+
+function getNobleMetadata(noble) {
+  return currentData?.nobles?.find((candidate) => candidate.id === noble.id) || null;
+}
+
 function cardArtAttrs(card) {
   const art = getCardArt(card);
   if (!art) {
@@ -901,6 +944,11 @@ function stableHash(value) {
 function sanitizeCardArtSrc(value) {
   const src = String(value || "");
   return /^assets\/card-art\/[-a-z0-9_/]+\.(png|jpe?g|webp)$/i.test(src) ? src : null;
+}
+
+function sanitizeNobleArtSrc(value) {
+  const src = String(value || "");
+  return /^assets\/noble-art\/[-a-z0-9_/]+\.(png|jpe?g|webp|svg)$/i.test(src) ? src : null;
 }
 
 function sanitizeCssPosition(value) {

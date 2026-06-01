@@ -319,6 +319,7 @@ button[aria-disabled="true"] {
 }
 
 .noble-tile {
+  --noble-art-position: 50% 50%;
   position: relative;
   display: grid;
   gap: 8px;
@@ -331,9 +332,48 @@ button[aria-disabled="true"] {
   text-align: left;
 }
 
+.noble-tile.has-art {
+  overflow: hidden;
+  grid-template-rows: auto 1fr;
+  padding: 8px;
+  background: #18233c;
+  color: #ffffff;
+  box-shadow: inset 0 -54px 42px rgba(9, 14, 27, 0.58);
+}
+
+.noble-tile.has-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(7, 12, 28, 0.18), rgba(7, 12, 28, 0.01) 42%, rgba(7, 12, 28, 0.66)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.01) 58%, rgba(7, 12, 28, 0.18));
+}
+
+.noble-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--noble-art-position);
+}
+
+.noble-tile.has-art > :not(.noble-art) {
+  position: relative;
+  z-index: 2;
+}
+
 .left-column .noble-tile {
   min-height: 102px;
   padding: 9px;
+}
+
+.left-column .noble-tile.has-art {
+  padding: 8px;
 }
 
 button.noble-tile.is-pending,
@@ -349,6 +389,30 @@ button.noble-tile.is-claimable {
 
 .noble-tile strong {
   font-size: 26px;
+}
+
+.noble-tile.has-art .noble-points {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 244, 196, 0.72);
+  border-radius: 999px;
+  background: rgba(18, 25, 46, 0.76);
+  color: #fff6c6;
+  font-size: 21px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.48);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+.noble-tile.has-art .cost-row {
+  align-self: end;
+}
+
+.noble-tile.has-art .cost-token {
+  border-color: rgba(255, 255, 255, 0.34);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.24);
 }
 
 .choice-label {
