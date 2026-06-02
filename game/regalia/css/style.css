@@ -266,8 +266,13 @@ button[aria-disabled="true"] {
   min-width: 0;
 }
 
-.market-panel {
+.market-column {
   grid-area: market;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
 }
 
 .left-column {
@@ -279,6 +284,7 @@ button[aria-disabled="true"] {
 }
 
 .bank-panel,
+.market-column,
 .market-panel,
 .player-panel {
   min-height: 0;
@@ -316,6 +322,24 @@ button[aria-disabled="true"] {
   color: var(--glass-muted);
   font-size: 12px;
   font-weight: 700;
+}
+
+.instruction-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.instruction-panel .panel-title {
+  margin-bottom: 0;
+}
+
+.instruction-text {
+  margin: 0;
+  min-height: 44px;
+  color: var(--glass-ink);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.5;
 }
 
 .noble-grid {

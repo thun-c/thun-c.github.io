@@ -363,13 +363,16 @@ function renderGame(game, data, options) {
             ${renderBank(game)}
           </section>
         </div>
-        <section class="panel market-panel">
-          <div class="panel-title">
-            <h2>ギルド</h2>
-            <span>${data.cards.length} 枚</span>
-          </div>
-          ${[3, 2, 1].map((level) => renderMarketRow(game, level)).join("")}
-        </section>
+        <div class="market-column">
+          <section class="panel market-panel">
+            <div class="panel-title">
+              <h2>ギルド</h2>
+              <span>${data.cards.length} 枚</span>
+            </div>
+            ${[3, 2, 1].map((level) => renderMarketRow(game, level)).join("")}
+          </section>
+          ${renderInstructionPanel(game)}
+        </div>
         <section class="panel player-panel">
           ${renderPlayersPanel(game)}
         </section>
@@ -409,6 +412,87 @@ function renderGameOver(game, winners) {
       <button class="primary-button" type="button" data-action="new-game">新規ゲーム</button>
     </section>
   `;
+}
+
+function renderInstructionPanel(game) {
+  return `
+    <section class="panel instruction-panel">
+      <div class="panel-title">
+        <h2>指示</h2>
+        <span>現在</span>
+      </div>
+      <p class="instruction-text">${escapeHtml(getPlayerInstruction(game))}</p>
+    </section>
+  `;
+}
+
+function getPlayerInstruction(game) {
+  const player = getCurrentPlayer(game);
+  const playerName = `${player.name}さん`;
+
+  if (game.phase === "gameOver") {
+    return "ゲームは終了しました。新規ゲームを開始できます。";
+  }
+
+  if (currentOptions.busy || player.type === "cpu") {
+    return getCpuInstruction(game, playerName);
+  }
+
+  if (game.phase === "discard") {
+    const excess = Math.max(0, totalTokens(player.tokens) - 10);
+    return `${playerName}、マナを${excess}枚返却して、合計10枚以下にしてください。`;
+  }
+
+  if (game.phase === "noble") {
+    const choiceText = game.pendingNobles.length > 1 ? `${game.pendingNobles.length}枚の中から` : "";
+    return `${playerName}、条件を満たした紋章を${choiceText}1枚選択してください。`;
+  }
+
+  const selectedCount = totalTokens(selectedTokens);
+  if (selectedCount > 0) {
+    return canTakeTokens(game, selectedTokens)
+      ? `${playerName}、選択中のマナを取るか、選択を取消してください。`
+      : `${playerName}、異なる3種類、または同じ種類2枚になるようにマナを選んでください。`;
+  }
+
+  const actionTypes = new Set(getLegalActions(game, player.id).map((action) => action.type));
+  if (actionTypes.has("passTurn")) {
+    return `${playerName}、実行できる行動がありません。パスしてください。`;
+  }
+
+  const options = [];
+  if (actionTypes.has("takeTokens")) {
+    options.push("マナを取得");
+  }
+  if (actionTypes.has("buyCard")) {
+    options.push("兵をスカウト");
+  }
+  if (actionTypes.has("reserveCard")) {
+    options.push("兵を予約");
+  }
+
+  return `${playerName}、${joinInstructionOptions(options)}。`;
+}
+
+function getCpuInstruction(game, playerName) {
+  if (game.phase === "discard") {
+    return `${playerName}、CPUが返却するマナを選んでいます。`;
+  }
+  if (game.phase === "noble") {
+    return `${playerName}、CPUが獲得する紋章を選んでいます。`;
+  }
+  return `${playerName}、CPUが行動を選んでいます。`;
+}
+
+function joinInstructionOptions(options) {
+  if (options.length === 0) {
+    return "状況を確認してください";
+  }
+  if (options.length === 1) {
+    return `${options[0]}してください`;
+  }
+  const earlier = options.slice(0, -1).map((option) => `${option}する`).join("か、");
+  return `${earlier}か、${options[options.length - 1]}してください`;
 }
 
 function renderNobleChoiceBanner(game) {
