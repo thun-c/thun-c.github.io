@@ -2,7 +2,7 @@ import { chooseCpuAction } from "./ai.js";
 import { applyAction, createNewGame, getCurrentPlayer, normalizeGameData, restoreGame } from "./game.js";
 import { initUI, render, resetTransientState } from "./ui.js";
 
-const SAVE_KEY = "splendorLocalGame.current";
+const SAVE_KEY = "regaliaLocalGame.current";
 
 let game = null;
 let gameData = null;
