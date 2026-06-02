@@ -269,7 +269,7 @@ function renderSetup(options) {
   return `
     <section class="setup-shell">
       <div class="setup-panel">
-        <p class="eyebrow">GitHub Pages / Mouse only</p>
+        <p class="eyebrow">Regalia of the Five Lights</p>
         <h1>五燈のレガリア</h1>
         <div class="setup-controls">
           <div class="field-group">
@@ -368,7 +368,7 @@ function renderGame(game, data, options) {
         <section class="panel market-panel">
           <div class="panel-title">
             <h2>ギルド</h2>
-            <span>${data.cards.length} cards</span>
+            <span>${data.cards.length} 枚</span>
           </div>
           ${[3, 2, 1].map((level) => renderMarketRow(game, level)).join("")}
         </section>
