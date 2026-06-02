@@ -573,9 +573,8 @@ function getPlayersInTurnOrder(game) {
 function renderPlayerDetail(game, player) {
   const bonuses = getPlayerBonuses(player);
   const isCurrent = player.id === game.currentPlayerIndex;
-  const hasReserved = player.reserved.length > 0;
   return `
-    <article class="player-detail-card ${isCurrent ? "is-current" : ""} ${hasReserved ? "has-reserved" : ""}">
+    <article class="player-detail-card has-reserved ${isCurrent ? "is-current" : ""}">
       <div class="player-core">
         <div class="player-card-header">
           <h3>${escapeHtml(player.name)}</h3>
@@ -597,21 +596,17 @@ function renderPlayerDetail(game, player) {
           <h4>マナ</h4>
           <div class="token-line">${renderTokenLine(player.tokens)}</div>
         </div>
-        ${player.nobles.length > 0 ? `
-          <div class="player-subsection">
-            <h4>紋章</h4>
-            <div class="noble-line">${renderClaimedNobles(player)}</div>
-          </div>
-        ` : ""}
-      </div>
-      ${hasReserved ? `
-        <div class="player-reserved-shelf">
-          <h4>予約</h4>
-          <div class="reserved-row">
-            ${renderReservedCards(game, player)}
-          </div>
+        <div class="player-subsection">
+          <h4>紋章</h4>
+          <div class="noble-line">${renderClaimedNobles(player)}</div>
         </div>
-      ` : ""}
+      </div>
+      <div class="player-reserved-shelf">
+        <h4>予約</h4>
+        <div class="reserved-row">
+          ${renderReservedCards(game, player)}
+        </div>
+      </div>
     </article>
   `;
 }
