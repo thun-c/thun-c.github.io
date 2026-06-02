@@ -579,24 +579,9 @@ button.noble-tile.is-claimable {
 
 .card-top {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.card-top strong {
-  min-width: 28px;
-  font-size: 26px;
-}
-
-.card-top strong:not(:empty) {
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 1px 4px rgba(32, 36, 42, 0.08);
-}
-
-.card-top strong:not(:empty) {
-  padding: 0 7px;
+  justify-content: flex-start;
+  align-items: flex-start;
+  min-height: 42px;
 }
 
 .bonus-dot {
@@ -608,6 +593,28 @@ button.noble-tile.is-claimable {
   border: 1px solid rgba(0, 0, 0, 0.16);
   font-size: 12px;
   font-weight: 800;
+}
+
+.card-bonus {
+  position: relative;
+  min-width: 42px;
+  height: 42px;
+  font-size: 24px;
+  color: var(--mana-fg);
+  text-shadow: var(--mana-text-shadow);
+  box-shadow: 0 2px 7px rgba(32, 36, 42, 0.22);
+}
+
+.card-points {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--mana-fg);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: var(--mana-text-shadow);
 }
 
 .bonus-dot.gem-white,
@@ -1084,8 +1091,12 @@ button.noble-tile.is-claimable {
   font-size: 11px;
 }
 
-.player-panel .reserved-row .card-top strong {
-  font-size: 20px;
+.player-panel .reserved-row .card-top {
+  min-height: 24px;
+}
+
+.player-panel .reserved-row .card-points {
+  font-size: 18px;
 }
 
 .player-panel .reserved-row .cost-token {

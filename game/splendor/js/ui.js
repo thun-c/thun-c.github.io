@@ -337,7 +337,7 @@ function renderGame(game, data, options) {
         <div class="left-column">
           <section class="panel nobles-panel">
             <div class="panel-title">
-              <h2>貴族</h2>
+              <h2>紋章</h2>
               <span>${game.nobles.length}枚</span>
             </div>
             <div class="noble-grid">
@@ -403,7 +403,7 @@ function renderNobleChoiceBanner(game) {
     <section class="choice-banner">
       <div>
         <p class="eyebrow">Noble Visit</p>
-        <h2>${escapeHtml(player.name)} は獲得する貴族を1枚選んでください</h2>
+        <h2>${escapeHtml(player.name)} は獲得する紋章を1枚選んでください</h2>
       </div>
       <span>${game.pendingNobles.length}枚から選択</span>
     </section>
@@ -420,7 +420,7 @@ function renderNoble(game, noble) {
   const art = getNobleArtData(noble);
   const displayName = getNobleDisplayName(noble);
   const artAttrs = art
-    ? `style="--noble-art-position: ${escapeAttr(art.position)};" aria-label="${escapeAttr(displayName || `${noble.points}点の貴族`)}"`
+    ? `style="--noble-art-position: ${escapeAttr(art.position)};" aria-label="${escapeAttr(displayName || `${noble.points}点の紋章`)}"`
     : "";
   return `
     <${tag} class="noble-tile ${art ? "has-art" : ""} ${isPending ? "is-pending" : ""} ${canClaim ? "is-claimable" : ""}" ${attrs} ${artAttrs}>
@@ -460,10 +460,12 @@ function renderCardButton(game, card, source) {
 }
 
 function renderCardFace(card) {
+  const pointLabel = card.points > 0 ? ` ${card.points}点` : "";
   return `
     <span class="card-top">
-      <strong>${card.points > 0 ? card.points : ""}</strong>
-      <span class="bonus-dot gem-${card.bonus}" aria-label="${COLOR_LABELS[card.bonus]}"></span>
+      <span class="bonus-dot card-bonus gem-${card.bonus}" aria-label="${COLOR_LABELS[card.bonus]}${pointLabel}">
+        ${card.points > 0 ? `<span class="card-points">${card.points}</span>` : ""}
+      </span>
     </span>
     <span class="cost-row">${renderCost(card.cost)}</span>
   `;
@@ -597,7 +599,7 @@ function renderPlayerDetail(game, player) {
         </div>
         ${player.nobles.length > 0 ? `
           <div class="player-subsection">
-            <h4>貴族</h4>
+            <h4>紋章</h4>
             <div class="noble-line">${renderClaimedNobles(player)}</div>
           </div>
         ` : ""}
@@ -1036,7 +1038,7 @@ function getActionBlockedReason(game) {
     return "先にマナを10枚以下に返却してください。";
   }
   if (game.phase === "noble") {
-    return "先に獲得する貴族を選んでください。";
+    return "先に獲得する紋章を選んでください。";
   }
   if (game.phase === "gameOver") {
     return "ゲームは終了しています。";
@@ -1087,7 +1089,7 @@ function phaseLabel(phase) {
   return {
     action: "手番",
     discard: "返却",
-    noble: "貴族",
+    noble: "紋章",
     gameOver: "終了",
   }[phase] || phase;
 }

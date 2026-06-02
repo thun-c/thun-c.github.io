@@ -851,7 +851,7 @@ function claimNobleInternal(game, nobleId) {
   const [noble] = game.nobles.splice(index, 1);
   player.nobles.push(noble);
   refreshScores(game);
-  addLog(game, `${player.name} が貴族タイルを獲得しました。`);
+  addLog(game, `${player.name} が紋章タイルを獲得しました。`);
 }
 
 function completeTurn(game) {
