@@ -339,8 +339,6 @@ function renderGame(game, data, options) {
           <h1>五燈のレガリア</h1>
         </div>
         <div class="topbar-status">
-          <span class="status-pill ${game.phase}">${phaseLabel(game.phase)}</span>
-          <span class="current-player">${escapeHtml(player.name)}</span>
           <button class="ghost-button topbar-button" type="button" data-action="new-game">新規ゲーム</button>
         </div>
       </header>
@@ -598,7 +596,10 @@ function renderPlayerDetail(game, player) {
       <div class="player-core">
         <div class="player-card-header">
           <h3>${escapeHtml(player.name)}</h3>
-          <span>${isCurrent ? "手番" : player.type === "cpu" ? "CPU" : "人間"}</span>
+          <div class="player-card-badges">
+            ${isCurrent ? "<span>手番</span>" : ""}
+            <span>${player.type === "cpu" ? "CPU" : "人間"}</span>
+          </div>
         </div>
         <div class="score-strip">
           <div><span>点</span><strong>${player.score}</strong></div>
@@ -1119,7 +1120,7 @@ function getConfirmTokensDisabledReason(game, isAction) {
 
 function getActionBlockedReason(game) {
   if (currentOptions.busy || getCurrentPlayer(game).type === "cpu") {
-    return "CPUの手番中です。";
+    return "CPUが操作中です。";
   }
   if (game.phase === "discard") {
     return "先にマナを10枚以下に返却してください。";
@@ -1170,15 +1171,6 @@ function getPlayerConfigs() {
 
 function defaultName(index, type) {
   return type === "cpu" ? `CPU ${index + 1}` : `Player ${index + 1}`;
-}
-
-function phaseLabel(phase) {
-  return {
-    action: "手番",
-    discard: "返却",
-    noble: "紋章",
-    gameOver: "終了",
-  }[phase] || phase;
 }
 
 function escapeHtml(value) {

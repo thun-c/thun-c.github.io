@@ -242,30 +242,6 @@ button[aria-disabled="true"] {
   justify-content: flex-end;
 }
 
-.status-pill,
-.current-player {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  border-radius: 8px;
-  padding: 0 12px;
-  background: #ffffff;
-  border: 1px solid var(--line);
-  font-weight: 700;
-}
-
-.status-pill.action {
-  color: var(--accent);
-}
-
-.status-pill.discard {
-  color: var(--danger);
-}
-
-.status-pill.noble {
-  color: #7c5b17;
-}
-
 .board-grid {
   display: grid;
   grid-template-columns: minmax(280px, 0.7fr) minmax(520px, 1.65fr) minmax(430px, 1.2fr);
@@ -1036,6 +1012,14 @@ button.noble-tile.is-claimable {
 
 .player-panel .player-card-header h3 {
   font-size: 15px;
+}
+
+.player-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .player-card-header span {
