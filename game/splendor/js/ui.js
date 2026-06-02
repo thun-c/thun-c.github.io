@@ -270,7 +270,7 @@ function renderSetup(options) {
     <section class="setup-shell">
       <div class="setup-panel">
         <p class="eyebrow">GitHub Pages / Mouse only</p>
-        <h1>アルカナ・ロード</h1>
+        <h1>五燈のレガリア</h1>
         <div class="setup-controls">
           <div class="field-group">
             <span class="field-label">人数</span>
@@ -336,7 +336,7 @@ function renderGame(game, data, options) {
       <header class="topbar">
         <div>
           <p class="eyebrow">Round ${game.round}</p>
-          <h1>アルカナ・ロード</h1>
+          <h1>五燈のレガリア</h1>
         </div>
         <div class="topbar-status">
           <span class="status-pill ${game.phase}">${phaseLabel(game.phase)}</span>
