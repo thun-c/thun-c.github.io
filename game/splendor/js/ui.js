@@ -17,6 +17,7 @@ import {
   normalizeTokens,
   totalTokens,
 } from "./game.js";
+import { RULE_PANEL } from "../rules/quick-reference.js";
 
 let root = null;
 let handlers = {};
@@ -207,16 +208,28 @@ function handleClick(event) {
 
 function handleAssetError(event) {
   const image = event.target;
-  if (!(image instanceof HTMLImageElement) || !image.classList.contains("noble-art")) {
+  if (!(image instanceof HTMLImageElement)) {
     return;
   }
 
-  const tile = image.closest(".noble-tile");
-  if (tile) {
-    tile.classList.remove("has-art");
-    tile.removeAttribute("style");
+  if (image.classList.contains("noble-art")) {
+    const tile = image.closest(".noble-tile");
+    if (tile) {
+      tile.classList.remove("has-art");
+      tile.removeAttribute("style");
+    }
+    image.remove();
+    return;
   }
-  image.remove();
+
+  if (image.classList.contains("rule-image")) {
+    const frame = image.closest(".rule-image-frame, .rule-figure");
+    if (frame) {
+      frame.remove();
+      return;
+    }
+    image.remove();
+  }
 }
 
 function handleChange(event) {
@@ -370,6 +383,13 @@ function renderGame(game, data, options) {
           <ol class="log-list">
             ${game.log.map((entry) => `<li><time>${escapeHtml(entry.at)}</time>${escapeHtml(entry.text)}</li>`).join("")}
           </ol>
+        </section>
+        <section class="panel rules-panel">
+          <div class="panel-title">
+            <h2>${escapeHtml(RULE_PANEL.title)}</h2>
+            <span>${escapeHtml(RULE_PANEL.badge)}</span>
+          </div>
+          ${renderRulesPanel(RULE_PANEL)}
         </section>
       </main>
       ${renderModal(game)}
@@ -641,6 +661,70 @@ function renderClaimedNobles(player) {
   return player.nobles
     .map((noble) => `<span class="claimed-noble">${noble.points}点</span>`)
     .join("");
+}
+
+function renderRulesPanel(rulePanel) {
+  const lead = rulePanel.lead ? `<p class="rules-lead">${escapeHtml(rulePanel.lead)}</p>` : "";
+  const sections = (rulePanel.sections || []).map((section) => renderRuleSection(section)).join("");
+  return `<div class="rules-content">${lead}${sections}</div>`;
+}
+
+function renderRuleSection(section) {
+  const body = section.body ? `<p>${escapeHtml(section.body)}</p>` : "";
+  const items = Array.isArray(section.items)
+    ? `<ul>${section.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+    : "";
+
+  return `
+    <article class="rule-block">
+      <h3>${escapeHtml(section.heading)}</h3>
+      ${renderRuleMedia(section.media)}
+      ${body}
+      ${items}
+    </article>
+  `;
+}
+
+function renderRuleMedia(media) {
+  if (!media) {
+    return "";
+  }
+
+  if (media.type === "image-strip" && Array.isArray(media.images)) {
+    return `
+      <div class="rule-image-strip" aria-label="${escapeAttr(media.label || "")}">
+        ${media.images.map((image) => renderRuleImage(image)).join("")}
+      </div>
+    `;
+  }
+
+  if (media.type === "image" && media.src) {
+    const src = resolveRuleAssetSrc(media.src);
+    if (!src) {
+      return "";
+    }
+    const caption = media.caption ? `<figcaption>${escapeHtml(media.caption)}</figcaption>` : "";
+    return `
+      <figure class="rule-figure">
+        <img class="rule-image" src="${escapeAttr(src)}" alt="${escapeAttr(media.alt || "")}">
+        ${caption}
+      </figure>
+    `;
+  }
+
+  return "";
+}
+
+function renderRuleImage(image) {
+  const src = resolveRuleAssetSrc(image.src);
+  if (!src) {
+    return "";
+  }
+  return `
+    <span class="rule-image-frame">
+      <img class="rule-image" src="${escapeAttr(src)}" alt="${escapeAttr(image.alt || "")}">
+    </span>
+  `;
 }
 
 function renderModal(game) {
@@ -946,6 +1030,14 @@ function sanitizeCardArtSrc(value) {
 function sanitizeNobleArtSrc(value) {
   const src = String(value || "");
   return /^assets\/noble-art\/[-a-z0-9_/]+\.(png|jpe?g|webp|svg)$/i.test(src) ? src : null;
+}
+
+function resolveRuleAssetSrc(value) {
+  const src = String(value || "");
+  if (!/^(assets|rules)\/[-a-z0-9_/]+\.(png|jpe?g|webp|svg)$/i.test(src)) {
+    return null;
+  }
+  return new URL(`../${src}`, import.meta.url).href;
 }
 
 function sanitizeCssPosition(value) {

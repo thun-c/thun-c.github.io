@@ -271,7 +271,7 @@ button[aria-disabled="true"] {
   grid-template-columns: minmax(280px, 0.7fr) minmax(520px, 1.65fr) minmax(430px, 1.2fr);
   grid-template-areas:
     "left market player"
-    "log log log";
+    "log rules rules";
   gap: 14px;
   align-items: stretch;
   max-width: 1500px;
@@ -314,6 +314,10 @@ button[aria-disabled="true"] {
 
 .log-panel {
   grid-area: log;
+}
+
+.rules-panel {
+  grid-area: rules;
 }
 
 .panel-title {
@@ -1185,6 +1189,92 @@ button.noble-tile.is-claimable {
   font-weight: 800;
 }
 
+.rules-content {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rules-lead {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--glass-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rule-block {
+  min-width: 0;
+  border: 1px solid rgba(226, 190, 118, 0.2);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(255, 246, 224, 0.07);
+}
+
+.rule-block h3 {
+  margin: 0 0 8px;
+  color: #fff4d4;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.rule-block p,
+.rule-block ul {
+  margin: 0;
+  color: #f4ead8;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.rule-block ul {
+  display: grid;
+  gap: 4px;
+  padding-left: 1.1em;
+}
+
+.rule-image-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 9px;
+}
+
+.rule-image-frame {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 239, 194, 0.36);
+  border-radius: 999px;
+  background: rgba(7, 8, 11, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 246, 224, 0.12);
+  overflow: hidden;
+}
+
+.rule-image-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rule-figure {
+  margin: 0 0 9px;
+}
+
+.rule-figure img {
+  display: block;
+  width: 100%;
+  max-height: 120px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.rule-figure figcaption {
+  margin-top: 5px;
+  color: var(--glass-muted);
+  font-size: 11px;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1337,11 +1427,16 @@ button.noble-tile.is-claimable {
       "player"
       "left"
       "market"
+      "rules"
       "log";
   }
 
   .card-row {
     grid-template-columns: repeat(2, minmax(128px, 170px));
+  }
+
+  .rules-content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1380,6 +1475,10 @@ button.noble-tile.is-claimable {
 
   .card-row {
     grid-template-columns: minmax(128px, 170px);
+  }
+
+  .rules-content {
+    grid-template-columns: 1fr;
   }
 
   .score-strip {
