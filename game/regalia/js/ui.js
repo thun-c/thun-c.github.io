@@ -323,6 +323,7 @@ function renderSetupPlayer(player, index) {
           <option value="lv01" ${difficulty === "lv01" ? "selected" : ""}>Lv01</option>
           <option value="lv02" ${difficulty === "lv02" ? "selected" : ""}>Lv02</option>
           <option value="lv03" ${difficulty === "lv03" ? "selected" : ""}>Lv03</option>
+          <option value="lv04" ${difficulty === "lv04" ? "selected" : ""}>Lv04</option>
         </select>
       </label>
     </div>
@@ -1270,7 +1271,7 @@ function normalizeSetupDifficulty(difficulty) {
   if (difficulty === "hard") {
     return "lv03";
   }
-  if (difficulty === "lv02" || difficulty === "lv03") {
+  if (difficulty === "lv02" || difficulty === "lv03" || difficulty === "lv04") {
     return difficulty;
   }
   return "lv01";

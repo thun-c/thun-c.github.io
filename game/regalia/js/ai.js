@@ -1,6 +1,7 @@
 import {
   TOKEN_COLORS,
   ALL_TOKEN_COLORS,
+  LEVEL_KEYS,
   applyAction,
   canBuyCard,
   createPlayerView,
@@ -13,6 +14,7 @@ import {
 const LV01 = "lv01";
 const LV02 = "lv02";
 const LV03 = "lv03";
+const LV04 = "lv04";
 const FUTURE_BUY_SCORE_WEIGHT = 0.03;
 const NEAREST_BUY_TURN_SCORE_WEIGHT = 0.12;
 const RESERVED_CARD_TURN_SCORE_WEIGHT = 0.015;
@@ -22,6 +24,11 @@ const LV03_BEAM_WIDTH = 8;
 const LV03_ACTION_WIDTH = 6;
 const LV03_ROOT_HEURISTIC_WEIGHT = 0.45;
 const LV03_ROOT_RESERVE_PENALTY = 70;
+const LV04_CANDIDATE_ACTIONS = 4;
+const LV04_PLAYOUT_SAMPLES = 3;
+const LV04_PLAYOUT_ACTION_LIMIT = 40;
+const LV04_ROOT_POLICY_WEIGHT = 0.8;
+const LV04_SWITCH_MARGIN = 180;
 
 export function chooseCpuAction(game, playerId, difficulty = LV01) {
   const level = normalizeDifficulty(difficulty);
@@ -29,6 +36,9 @@ export function chooseCpuAction(game, playerId, difficulty = LV01) {
   const actions = getLegalActions(game, playerId);
   if (actions.length === 0) {
     return null;
+  }
+  if (level === LV04 && game.phase === "action") {
+    return chooseActionByRootMonteCarlo(game, playerId, actions);
   }
   if (level === LV03 && game.phase === "action") {
     return chooseActionByBeamSearch(game, playerId, actions);
@@ -85,7 +95,7 @@ export function normalizeDifficulty(difficulty) {
   if (difficulty === "hard") {
     return LV03;
   }
-  if (difficulty === LV02 || difficulty === LV03) {
+  if (difficulty === LV02 || difficulty === LV03 || difficulty === LV04) {
     return difficulty;
   }
   return LV01;
@@ -99,7 +109,10 @@ function scoreBuyAction(playerView, action, difficulty) {
     const required = noble.requirement[card.bonus] || 0;
     return score + (current < required ? 4 : 0);
   }, 0);
-  const difficultyBonus = difficulty === LV01 || difficulty === LV02 || difficulty === LV03 ? 0 : noblePressure;
+  const difficultyBonus =
+    difficulty === LV01 || difficulty === LV02 || difficulty === LV03 || difficulty === LV04
+      ? 0
+      : noblePressure;
   return 120 + card.points * 35 + card.level * 6 + difficultyBonus;
 }
 
@@ -108,7 +121,7 @@ function scoreReserveAction(playerView, action, difficulty) {
   if (!card) {
     return playerView.bank.gold > 0 ? 16 : 5;
   }
-  if (difficulty !== LV02 && difficulty !== LV03) {
+  if (difficulty !== LV02 && difficulty !== LV03 && difficulty !== LV04) {
     const goldValue = playerView.bank.gold > 0 ? 18 : 0;
     return 10 + goldValue + card.points * 12 + card.level * 2;
   }
@@ -116,7 +129,7 @@ function scoreReserveAction(playerView, action, difficulty) {
 }
 
 function scoreTakeTokensAction(playerView, action, difficulty) {
-  if (difficulty === LV02 || difficulty === LV03) {
+  if (difficulty === LV02 || difficulty === LV03 || difficulty === LV04) {
     return scoreMediumTakeTokensAction(playerView, action, difficulty);
   }
 
@@ -237,6 +250,171 @@ function chooseActionByBeamSearch(game, playerId, actions) {
   }
 
   return beam[0]?.rootAction || chooseActionByHeuristic(createPlayerView(game, playerId), actions, LV02);
+}
+
+function chooseActionByRootMonteCarlo(game, playerId, actions) {
+  const fallbackAction = chooseActionByBeamSearch(game, playerId, actions);
+  if (!shouldUseRootMonteCarlo(game, playerId)) {
+    return fallbackAction;
+  }
+
+  const visibleGame = createVisibleSearchGame(game, playerId);
+  const rootView = createPlayerView(visibleGame, playerId);
+  const candidates = collectMonteCarloCandidates(
+    visibleGame,
+    playerId,
+    actions,
+    fallbackAction
+  );
+  if (candidates.length <= 1) {
+    return fallbackAction;
+  }
+
+  const scored = candidates.map((action) => ({
+    action,
+    playoutTotal: 0,
+    trials: 0,
+    rootScore: scoreRootSearchAction(rootView, action) * LV04_ROOT_POLICY_WEIGHT,
+  }));
+
+  for (let sampleIndex = 0; sampleIndex < LV04_PLAYOUT_SAMPLES; sampleIndex += 1) {
+    const sampledGame = createSampledPlayoutGame(game, playerId);
+    scored.forEach((entry) => {
+      const playoutGame = cloneGameForSearch(sampledGame);
+      applyAction(playoutGame, cloneActionForSearch(entry.action));
+      playOutGame(playoutGame);
+      entry.playoutTotal += scoreMonteCarloResult(playoutGame, playerId);
+      entry.trials += 1;
+    });
+  }
+
+  const ranked = scored
+    .map((entry) => ({
+      ...entry,
+      value: entry.playoutTotal / Math.max(1, entry.trials) + entry.rootScore,
+    }))
+    .sort((a, b) => b.value - a.value);
+  const fallbackEntry =
+    ranked.find((entry) => actionKey(entry.action) === actionKey(fallbackAction)) || ranked[0];
+  const bestEntry = ranked[0];
+
+  if (bestEntry.value >= fallbackEntry.value + getMonteCarloSwitchMargin(game)) {
+    return bestEntry.action;
+  }
+  return fallbackAction;
+}
+
+function shouldUseRootMonteCarlo(game, playerId) {
+  const rootScore = getPlayerScore(game.players[playerId]);
+  const bestScore = Math.max(...game.players.map((player) => getPlayerScore(player)));
+  const playerCount = game.players.length;
+  if (game.finalRoundTriggeredBy !== null) {
+    return true;
+  }
+  if (playerCount >= 4) {
+    return rootScore >= 7 || bestScore >= 10 || game.round >= 10 + playerCount;
+  }
+  if (playerCount === 3) {
+    return rootScore >= 11 || bestScore >= 13 || game.round >= 18;
+  }
+  return (
+    rootScore >= 12 ||
+    bestScore >= 14 ||
+    game.round >= 22
+  );
+}
+
+function getMonteCarloSwitchMargin(game) {
+  if (game.players.length >= 4) {
+    return LV04_SWITCH_MARGIN;
+  }
+  return 650;
+}
+
+function collectMonteCarloCandidates(game, playerId, actions, fallbackAction) {
+  const candidates = [];
+  const keys = new Set();
+  const addAction = (action) => {
+    if (!action) {
+      return;
+    }
+    const key = actionKey(action);
+    if (keys.has(key)) {
+      return;
+    }
+    keys.add(key);
+    candidates.push(action);
+  };
+
+  addAction(fallbackAction);
+  rankSearchActions(game, playerId, actions, playerId, LV04_CANDIDATE_ACTIONS).forEach(addAction);
+  return candidates.slice(0, LV04_CANDIDATE_ACTIONS);
+}
+
+function playOutGame(game) {
+  let actions = 0;
+  while (game.phase !== "gameOver" && actions < LV04_PLAYOUT_ACTION_LIMIT) {
+    const playerId = game.currentPlayerIndex;
+    const legalActions = getLegalActions(game, playerId);
+    if (legalActions.length === 0) {
+      break;
+    }
+    const action = chooseActionByHeuristic(createPlayerView(game, playerId), legalActions, LV02);
+    if (!action) {
+      break;
+    }
+    applyAction(game, action);
+    actions += 1;
+  }
+}
+
+function scoreMonteCarloResult(game, rootPlayerId) {
+  const rootPlayer = game.players[rootPlayerId];
+  const playerCount = game.players.length;
+  const rootScore = getPlayerScore(rootPlayer);
+  const opponentBestScore = Math.max(
+    ...game.players
+      .filter((player) => player.id !== rootPlayerId)
+      .map((player) => getPlayerScore(player))
+  );
+  const scoreMargin = rootScore - opponentBestScore;
+  const rank = getPlayerRank(game, rootPlayerId);
+  const rankScore = (playerCount - rank) * 650;
+  const triggerScore = game.finalRoundTriggeredBy === rootPlayerId ? 500 : 0;
+
+  if (game.phase === "gameOver") {
+    const winShare = game.winnerIds.includes(rootPlayerId) ? 1 / game.winnerIds.length : 0;
+    const lossPenalty = winShare > 0 ? 0 : -1600;
+    return (
+      winShare * 18000 +
+      lossPenalty +
+      rankScore +
+      scoreMargin * 260 +
+      rootScore * 80 +
+      rootPlayer.nobles.length * 170 +
+      triggerScore
+    );
+  }
+
+  return (
+    evaluateSearchState(game, rootPlayerId) +
+    rankScore +
+    scoreMargin * 220 +
+    rootScore * 65 +
+    rootPlayer.nobles.length * 140 +
+    triggerScore
+  );
+}
+
+function getPlayerRank(game, playerId) {
+  const ordered = game.players
+    .map((player) => ({
+      id: player.id,
+      score: getPlayerScore(player),
+      cards: player.cards.length,
+    }))
+    .sort((a, b) => b.score - a.score || a.cards - b.cards || a.id - b.id);
+  return ordered.findIndex((player) => player.id === playerId) + 1;
 }
 
 function scoreRootSearchAction(playerView, action) {
@@ -377,6 +555,58 @@ function createVisibleSearchGame(game, rootPlayerId) {
   return sanitizeSearchGame(cloneGameForSearch(game), rootPlayerId);
 }
 
+function createSampledPlayoutGame(game, rootPlayerId) {
+  const sampledGame = cloneGameForSearch(game);
+  const unknownCardsByLevel = createUnknownCardsByLevel(sampledGame, rootPlayerId);
+
+  sampledGame.players.forEach((player) => {
+    player.difficulty = normalizeDifficulty(player.difficulty);
+    if (player.id === rootPlayerId) {
+      return;
+    }
+
+    player.reserved = player.reserved.map((card) => {
+      const key = levelKeyForCard(card);
+      return drawRandomUnknownCard(unknownCardsByLevel[key]) || card;
+    });
+  });
+
+  LEVEL_KEYS.forEach((key) => {
+    sampledGame.decks[key] = shuffleCards(unknownCardsByLevel[key]);
+  });
+  sampledGame.log = [];
+  return sampledGame;
+}
+
+function createUnknownCardsByLevel(game, rootPlayerId) {
+  const unknownCardsByLevel = Object.fromEntries(LEVEL_KEYS.map((key) => [key, []]));
+
+  LEVEL_KEYS.forEach((key) => {
+    unknownCardsByLevel[key].push(...game.decks[key]);
+  });
+
+  game.players.forEach((player) => {
+    if (player.id === rootPlayerId) {
+      return;
+    }
+    player.reserved.forEach((card) => {
+      unknownCardsByLevel[levelKeyForCard(card)].push(card);
+    });
+  });
+
+  LEVEL_KEYS.forEach((key) => {
+    unknownCardsByLevel[key] = shuffleCards(unknownCardsByLevel[key]);
+  });
+  return unknownCardsByLevel;
+}
+
+function drawRandomUnknownCard(cards) {
+  if (!cards || cards.length === 0) {
+    return null;
+  }
+  return cards.pop();
+}
+
 function cloneGameForSearch(game) {
   return JSON.parse(JSON.stringify(game));
 }
@@ -419,6 +649,19 @@ function createHiddenReservedCard(playerId, index) {
 
 function isHiddenReservedCard(card) {
   return String(card.id || "").startsWith("hidden-");
+}
+
+function levelKeyForCard(card) {
+  return `level${card.level}`;
+}
+
+function shuffleCards(cards) {
+  const result = cards.slice();
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [result[index], result[randomIndex]] = [result[randomIndex], result[index]];
+  }
+  return result;
 }
 
 function scoreMediumTakeTokensAction(playerView, action, difficulty) {

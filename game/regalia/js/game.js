@@ -942,7 +942,7 @@ function normalizeCpuDifficulty(difficulty) {
   if (difficulty === "hard") {
     return "lv03";
   }
-  if (difficulty === "lv02" || difficulty === "lv03") {
+  if (difficulty === "lv02" || difficulty === "lv03" || difficulty === "lv04") {
     return difficulty;
   }
   return "lv01";
