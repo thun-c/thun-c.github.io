@@ -320,6 +320,7 @@ function renderSetupPlayer(player, index) {
         <span>強さ</span>
         <select data-field="difficulty" data-player-index="${index}" ${isCpu ? "" : "disabled"}>
           <option value="easy" ${player.difficulty === "easy" ? "selected" : ""}>easy</option>
+          <option value="medium" ${player.difficulty === "medium" ? "selected" : ""}>medium</option>
         </select>
       </label>
     </div>
