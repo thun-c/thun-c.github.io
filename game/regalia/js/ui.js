@@ -32,10 +32,10 @@ let noticeTimer = null;
 const setupState = {
   playerCount: 2,
   players: [
-    { type: "human", name: "Player 1", difficulty: "easy" },
-    { type: "cpu", name: "CPU 1", difficulty: "easy" },
-    { type: "cpu", name: "CPU 2", difficulty: "easy" },
-    { type: "cpu", name: "CPU 3", difficulty: "easy" },
+    { type: "human", name: "Player 1", difficulty: "lv01" },
+    { type: "cpu", name: "CPU 1", difficulty: "lv01" },
+    { type: "cpu", name: "CPU 2", difficulty: "lv01" },
+    { type: "cpu", name: "CPU 3", difficulty: "lv01" },
   ],
 };
 
@@ -303,6 +303,7 @@ function renderSetup(options) {
 
 function renderSetupPlayer(player, index) {
   const isCpu = player.type === "cpu";
+  const difficulty = normalizeSetupDifficulty(player.difficulty);
   return `
     <div class="setup-row">
       <label class="setup-name">
@@ -319,8 +320,9 @@ function renderSetupPlayer(player, index) {
       <label class="${isCpu ? "" : "is-muted"}">
         <span>強さ</span>
         <select data-field="difficulty" data-player-index="${index}" ${isCpu ? "" : "disabled"}>
-          <option value="easy" ${player.difficulty === "easy" ? "selected" : ""}>easy</option>
-          <option value="medium" ${player.difficulty === "medium" ? "selected" : ""}>medium</option>
+          <option value="lv01" ${difficulty === "lv01" ? "selected" : ""}>Lv01</option>
+          <option value="lv02" ${difficulty === "lv02" ? "selected" : ""}>Lv02</option>
+          <option value="lv03" ${difficulty === "lv03" ? "selected" : ""}>Lv03</option>
         </select>
       </label>
     </div>
@@ -1250,12 +1252,28 @@ function getPlayerConfigs() {
   return setupState.players.slice(0, setupState.playerCount).map((player, index) => ({
     type: player.type,
     name: player.name || defaultName(index, player.type),
-    difficulty: player.difficulty || "easy",
+    difficulty: normalizeSetupDifficulty(player.difficulty),
   }));
 }
 
 function defaultName(index, type) {
   return type === "cpu" ? `CPU ${index + 1}` : `Player ${index + 1}`;
+}
+
+function normalizeSetupDifficulty(difficulty) {
+  if (difficulty === "easy") {
+    return "lv01";
+  }
+  if (difficulty === "medium") {
+    return "lv02";
+  }
+  if (difficulty === "hard") {
+    return "lv03";
+  }
+  if (difficulty === "lv02" || difficulty === "lv03") {
+    return difficulty;
+  }
+  return "lv01";
 }
 
 function escapeHtml(value) {

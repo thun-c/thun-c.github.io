@@ -1,37 +1,53 @@
 import {
   TOKEN_COLORS,
   ALL_TOKEN_COLORS,
+  applyAction,
   canBuyCard,
   createPlayerView,
   getLegalActions,
   getPlayerBonuses,
+  getPlayerScore,
   totalTokens,
 } from "./game.js";
 
+const LV01 = "lv01";
+const LV02 = "lv02";
+const LV03 = "lv03";
 const FUTURE_BUY_SCORE_WEIGHT = 0.03;
 const NEAREST_BUY_TURN_SCORE_WEIGHT = 0.12;
 const RESERVED_CARD_TURN_SCORE_WEIGHT = 0.015;
 const THEORETICAL_THREE_COLOR_TAKES = createTheoreticalThreeColorTakes();
+const LV03_SEARCH_DEPTH = 3;
+const LV03_BEAM_WIDTH = 8;
+const LV03_ACTION_WIDTH = 6;
+const LV03_ROOT_HEURISTIC_WEIGHT = 0.45;
+const LV03_ROOT_RESERVE_PENALTY = 70;
 
-export function chooseCpuAction(game, playerId, difficulty = "easy") {
+export function chooseCpuAction(game, playerId, difficulty = LV01) {
+  const level = normalizeDifficulty(difficulty);
   const playerView = createPlayerView(game, playerId);
   const actions = getLegalActions(game, playerId);
   if (actions.length === 0) {
     return null;
   }
-  return chooseActionByHeuristic(playerView, actions, difficulty);
+  if (level === LV03 && game.phase === "action") {
+    return chooseActionByBeamSearch(game, playerId, actions);
+  }
+  return chooseActionByHeuristic(playerView, actions, level);
 }
 
-export function chooseActionByHeuristic(playerView, actions, difficulty = "easy") {
+export function chooseActionByHeuristic(playerView, actions, difficulty = LV01) {
+  const level = normalizeDifficulty(difficulty);
   const scored = actions.map((action) => ({
     action,
-    score: scoreAction(playerView, action, difficulty) + Math.random() * 0.25,
+    score: scoreAction(playerView, action, level) + Math.random() * 0.25,
   }));
   scored.sort((a, b) => b.score - a.score);
   return scored[0].action;
 }
 
-export function scoreAction(playerView, action, difficulty = "easy") {
+export function scoreAction(playerView, action, difficulty = LV01) {
+  const level = normalizeDifficulty(difficulty);
   if (action.type === "claimNoble") {
     return 500;
   }
@@ -41,15 +57,15 @@ export function scoreAction(playerView, action, difficulty = "easy") {
   }
 
   if (action.type === "buyCard") {
-    return scoreBuyAction(playerView, action, difficulty);
+    return scoreBuyAction(playerView, action, level);
   }
 
   if (action.type === "reserveCard") {
-    return scoreReserveAction(playerView, action, difficulty);
+    return scoreReserveAction(playerView, action, level);
   }
 
   if (action.type === "takeTokens") {
-    return scoreTakeTokensAction(playerView, action, difficulty);
+    return scoreTakeTokensAction(playerView, action, level);
   }
 
   if (action.type === "passTurn") {
@@ -57,6 +73,22 @@ export function scoreAction(playerView, action, difficulty = "easy") {
   }
 
   return 0;
+}
+
+export function normalizeDifficulty(difficulty) {
+  if (difficulty === "easy") {
+    return LV01;
+  }
+  if (difficulty === "medium") {
+    return LV02;
+  }
+  if (difficulty === "hard") {
+    return LV03;
+  }
+  if (difficulty === LV02 || difficulty === LV03) {
+    return difficulty;
+  }
+  return LV01;
 }
 
 function scoreBuyAction(playerView, action, difficulty) {
@@ -67,7 +99,7 @@ function scoreBuyAction(playerView, action, difficulty) {
     const required = noble.requirement[card.bonus] || 0;
     return score + (current < required ? 4 : 0);
   }, 0);
-  const difficultyBonus = difficulty === "easy" || difficulty === "medium" ? 0 : noblePressure;
+  const difficultyBonus = difficulty === LV01 || difficulty === LV02 || difficulty === LV03 ? 0 : noblePressure;
   return 120 + card.points * 35 + card.level * 6 + difficultyBonus;
 }
 
@@ -76,7 +108,7 @@ function scoreReserveAction(playerView, action, difficulty) {
   if (!card) {
     return playerView.bank.gold > 0 ? 16 : 5;
   }
-  if (difficulty !== "medium") {
+  if (difficulty !== LV02 && difficulty !== LV03) {
     const goldValue = playerView.bank.gold > 0 ? 18 : 0;
     return 10 + goldValue + card.points * 12 + card.level * 2;
   }
@@ -84,7 +116,7 @@ function scoreReserveAction(playerView, action, difficulty) {
 }
 
 function scoreTakeTokensAction(playerView, action, difficulty) {
-  if (difficulty === "medium") {
+  if (difficulty === LV02 || difficulty === LV03) {
     return scoreMediumTakeTokensAction(playerView, action, difficulty);
   }
 
@@ -128,7 +160,7 @@ function getWantedColors(playerView, difficulty) {
   ].filter(Boolean);
 
   visibleCards.forEach((card) => {
-    const pointWeight = difficulty === "easy" ? 1 : 1 + card.points;
+    const pointWeight = difficulty === LV01 ? 1 : 1 + card.points;
     TOKEN_COLORS.forEach((color) => {
       const remaining = Math.max(0, card.cost[color] - bonuses[color] - player.tokens[color]);
       if (remaining > 0) {
@@ -137,7 +169,7 @@ function getWantedColors(playerView, difficulty) {
     });
   });
 
-  if (difficulty !== "easy") {
+  if (difficulty !== LV01) {
     playerView.nobles.forEach((noble) => {
       TOKEN_COLORS.forEach((color) => {
         const remaining = Math.max(0, noble.requirement[color] - bonuses[color]);
@@ -147,6 +179,246 @@ function getWantedColors(playerView, difficulty) {
   }
 
   return wanted;
+}
+
+function chooseActionByBeamSearch(game, playerId, actions) {
+  const searchGame = createVisibleSearchGame(game, playerId);
+  const rootActions = rankSearchActions(searchGame, playerId, actions, playerId, Infinity);
+  const rootView = createPlayerView(searchGame, playerId);
+  let beam = rootActions.map((action) => {
+    const nextGame = applySearchAction(searchGame, action, playerId);
+    const rootBias = scoreRootSearchAction(rootView, action);
+    return {
+      game: nextGame,
+      rootAction: action,
+      rootBias,
+      value: evaluateSearchState(nextGame, playerId) + rootBias,
+    };
+  });
+
+  beam.sort((a, b) => b.value - a.value);
+  beam = beam.slice(0, LV03_BEAM_WIDTH);
+
+  for (let depth = 1; depth < LV03_SEARCH_DEPTH; depth += 1) {
+    const nextBeam = [];
+    beam.forEach((state) => {
+      if (state.game.phase === "gameOver") {
+        nextBeam.push(state);
+        return;
+      }
+
+      const currentPlayerId = state.game.currentPlayerIndex;
+      const legalActions = getLegalActions(state.game, currentPlayerId);
+      if (legalActions.length === 0) {
+        nextBeam.push(state);
+        return;
+      }
+
+      const rankedActions = rankSearchActions(
+        state.game,
+        currentPlayerId,
+        legalActions,
+        playerId,
+        LV03_ACTION_WIDTH
+      );
+      rankedActions.forEach((action) => {
+        const nextGame = applySearchAction(state.game, action, playerId);
+        nextBeam.push({
+          game: nextGame,
+          rootAction: state.rootAction,
+          rootBias: state.rootBias,
+          value: evaluateSearchState(nextGame, playerId) + state.rootBias,
+        });
+      });
+    });
+
+    nextBeam.sort((a, b) => b.value - a.value);
+    beam = nextBeam.slice(0, LV03_BEAM_WIDTH);
+  }
+
+  return beam[0]?.rootAction || chooseActionByHeuristic(createPlayerView(game, playerId), actions, LV02);
+}
+
+function scoreRootSearchAction(playerView, action) {
+  const reservePenalty = action.type === "reserveCard" ? LV03_ROOT_RESERVE_PENALTY : 0;
+  return scoreAction(playerView, action, LV02) * LV03_ROOT_HEURISTIC_WEIGHT - reservePenalty;
+}
+
+function rankSearchActions(game, playerId, actions, rootPlayerId, limit) {
+  const playerView = createPlayerView(game, playerId);
+  const scored = actions.map((action) => ({
+    action,
+    score:
+      scoreAction(playerView, action, LV02) +
+      (playerId === rootPlayerId ? 0.05 : -0.05) * evaluateActionTempo(action),
+  }));
+  scored.sort((a, b) => b.score - a.score);
+
+  const selected = [];
+  const selectedKeys = new Set();
+  const addAction = (action) => {
+    const key = actionKey(action);
+    if (selectedKeys.has(key)) {
+      return;
+    }
+    selectedKeys.add(key);
+    selected.push(action);
+  };
+
+  scored
+    .filter((entry) => entry.action.type === "claimNoble" || entry.action.type === "buyCard")
+    .forEach((entry) => addAction(entry.action));
+  scored.slice(0, limit).forEach((entry) => addAction(entry.action));
+
+  return selected.slice(0, Math.max(limit, LV03_ACTION_WIDTH));
+}
+
+function evaluateActionTempo(action) {
+  if (action.type === "buyCard") {
+    return 3;
+  }
+  if (action.type === "claimNoble") {
+    return 2;
+  }
+  if (action.type === "reserveCard") {
+    return 1;
+  }
+  return 0;
+}
+
+function applySearchAction(game, action, rootPlayerId) {
+  const nextGame = cloneGameForSearch(game);
+  applyAction(nextGame, cloneActionForSearch(action));
+  return sanitizeSearchGame(nextGame, rootPlayerId);
+}
+
+function evaluateSearchState(game, rootPlayerId) {
+  if (game.phase === "gameOver") {
+    if (game.winnerIds.includes(rootPlayerId)) {
+      return 100000 / game.winnerIds.length;
+    }
+    return -100000;
+  }
+
+  const rootPlayer = game.players[rootPlayerId];
+  const opponents = game.players.filter((player) => player.id !== rootPlayerId);
+  const rootView = createPlayerView(game, rootPlayerId);
+  const rootScore = getPlayerScore(rootPlayer);
+  const opponentBestScore = Math.max(...opponents.map((player) => getPlayerScore(player)));
+
+  return (
+    rootScore * 115 -
+    opponentBestScore * 75 +
+    rootPlayer.cards.length * 24 +
+    rootPlayer.nobles.length * 85 +
+    totalTokens(rootPlayer.tokens) * 1.5 +
+    scoreBonusSpread(rootPlayer) +
+    scoreVisibleBuyPotential(rootView) +
+    scoreNobleProgress(rootView, rootPlayer) -
+    scoreOpponentPressure(game, rootPlayerId)
+  );
+}
+
+function scoreBonusSpread(player) {
+  const bonuses = getPlayerBonuses(player);
+  const totalBonus = TOKEN_COLORS.reduce((sum, color) => sum + bonuses[color], 0);
+  const colorCoverage = TOKEN_COLORS.filter((color) => bonuses[color] > 0).length;
+  return totalBonus * 18 + colorCoverage * 10;
+}
+
+function scoreVisibleBuyPotential(playerView) {
+  const player = playerView.player;
+  return getBuyableCards(playerView).reduce((score, card) => {
+    if (canBuyCard(player, card)) {
+      return score + scoreBuyAction(playerView, { card }, LV02) * 0.12;
+    }
+    const turns = estimateTokenTurnsToBuy(player, card, playerView.bank, true);
+    if (!Number.isFinite(turns)) {
+      return score;
+    }
+    return score + (scoreBuyAction(playerView, { card }, LV02) * 0.03) / (turns + 1);
+  }, 0);
+}
+
+function scoreNobleProgress(playerView, player) {
+  const bonuses = getPlayerBonuses(player);
+  return playerView.nobles.reduce((score, noble) => {
+    const missing = TOKEN_COLORS.reduce(
+      (sum, color) => sum + Math.max(0, noble.requirement[color] - bonuses[color]),
+      0
+    );
+    if (missing === 0) {
+      return score + 80;
+    }
+    if (missing === 1) {
+      return score + 48;
+    }
+    if (missing === 2) {
+      return score + 28;
+    }
+    return score + Math.max(0, 14 - missing * 2);
+  }, 0);
+}
+
+function scoreOpponentPressure(game, rootPlayerId) {
+  return game.players
+    .filter((player) => player.id !== rootPlayerId)
+    .reduce((score, player) => {
+      const view = createPlayerView(game, player.id);
+      return score + getPlayerScore(player) * 8 + scoreVisibleBuyPotential(view) * 0.2;
+    }, 0);
+}
+
+function actionKey(action) {
+  return JSON.stringify(action);
+}
+
+function createVisibleSearchGame(game, rootPlayerId) {
+  return sanitizeSearchGame(cloneGameForSearch(game), rootPlayerId);
+}
+
+function cloneGameForSearch(game) {
+  return JSON.parse(JSON.stringify(game));
+}
+
+function cloneActionForSearch(action) {
+  return JSON.parse(JSON.stringify(action));
+}
+
+function sanitizeSearchGame(game, rootPlayerId) {
+  game.decks = {
+    level1: [],
+    level2: [],
+    level3: [],
+  };
+  game.log = [];
+  game.players.forEach((player) => {
+    player.difficulty = normalizeDifficulty(player.difficulty);
+    if (player.id !== rootPlayerId) {
+      player.reserved = player.reserved.map((_, index) => createHiddenReservedCard(player.id, index));
+    }
+  });
+  return game;
+}
+
+function createHiddenReservedCard(playerId, index) {
+  return {
+    id: `hidden-${playerId}-${index}`,
+    level: 1,
+    points: 0,
+    bonus: TOKEN_COLORS[0],
+    cost: {
+      white: 99,
+      blue: 99,
+      green: 99,
+      red: 99,
+      black: 99,
+    },
+  };
+}
+
+function isHiddenReservedCard(card) {
+  return String(card.id || "").startsWith("hidden-");
 }
 
 function scoreMediumTakeTokensAction(playerView, action, difficulty) {
@@ -195,7 +467,7 @@ function getBuyableCards(playerView) {
     ...playerView.market.level2,
     ...playerView.market.level3,
     ...playerView.player.reserved,
-  ].filter(Boolean);
+  ].filter((card) => card && !isHiddenReservedCard(card));
 }
 
 function createPlayerWithTokenChanges(player, tokenChanges, reservedCard = null) {

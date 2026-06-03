@@ -43,7 +43,10 @@ export function createNewGame(playerConfigs, data) {
     phase: "action",
     settings: {
       playerCount,
-      players: configs.map((config) => ({ ...config })),
+      players: configs.map((config) => ({
+        ...config,
+        difficulty: config.type === "cpu" ? normalizeCpuDifficulty(config.difficulty) : null,
+      })),
     },
     bank: createBank(playerCount),
     decks,
@@ -78,7 +81,7 @@ export function createPlayer(id, config) {
     id,
     name: config.name || defaultPlayerName(id, config.type),
     type: config.type || "human",
-    difficulty: config.type === "cpu" ? config.difficulty || "easy" : null,
+    difficulty: config.type === "cpu" ? normalizeCpuDifficulty(config.difficulty) : null,
     tokens: emptyTokens(),
     cards: [],
     reserved: [],
@@ -107,7 +110,7 @@ export function restoreGame(game) {
     id: index,
     name: player.name || defaultPlayerName(index, player.type),
     type: player.type || "human",
-    difficulty: player.type === "cpu" ? player.difficulty || "easy" : null,
+    difficulty: player.type === "cpu" ? normalizeCpuDifficulty(player.difficulty) : null,
     tokens: normalizeTokens(player.tokens),
     cards: (player.cards || []).map(normalizeCard),
     reserved: (player.reserved || []).map(normalizeCard),
@@ -927,4 +930,20 @@ function clonePlayerForView(player, includeReservedCards) {
 
 function defaultPlayerName(id, type) {
   return type === "cpu" ? `CPU ${id + 1}` : `Player ${id + 1}`;
+}
+
+function normalizeCpuDifficulty(difficulty) {
+  if (difficulty === "easy") {
+    return "lv01";
+  }
+  if (difficulty === "medium") {
+    return "lv02";
+  }
+  if (difficulty === "hard") {
+    return "lv03";
+  }
+  if (difficulty === "lv02" || difficulty === "lv03") {
+    return difficulty;
+  }
+  return "lv01";
 }
