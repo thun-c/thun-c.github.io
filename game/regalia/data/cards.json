@@ -1,0 +1,36 @@
+{
+  "note": "GitHub Pagesで読み込むためのカードデータです。公式カード一覧ではなく、基本セットと同じ90枚構成になる独自の生成レシピです。",
+  "colors": ["white", "blue", "green", "red", "black"],
+  "levels": {
+    "1": {
+      "patterns": [
+        { "points": 0, "cost": { "next1": 1, "next2": 1, "next3": 1, "next4": 1 } },
+        { "points": 0, "cost": { "next1": 2, "next2": 2 } },
+        { "points": 0, "cost": { "next1": 2, "next3": 2 } },
+        { "points": 0, "cost": { "next2": 3 } },
+        { "points": 0, "cost": { "next1": 1, "next2": 1, "next3": 2 } },
+        { "points": 0, "cost": { "next1": 1, "next2": 2, "next4": 1 } },
+        { "points": 1, "cost": { "next1": 4 } },
+        { "points": 1, "cost": { "next2": 3, "next3": 1, "next4": 1 } }
+      ]
+    },
+    "2": {
+      "patterns": [
+        { "points": 1, "cost": { "next1": 3, "next2": 2, "next3": 2 } },
+        { "points": 1, "cost": { "next2": 3, "next3": 3 } },
+        { "points": 2, "cost": { "next1": 5 } },
+        { "points": 2, "cost": { "next1": 3, "next2": 2, "next4": 2 } },
+        { "points": 2, "cost": { "next1": 4, "next3": 2 } },
+        { "points": 3, "cost": { "next2": 6 } }
+      ]
+    },
+    "3": {
+      "patterns": [
+        { "points": 3, "cost": { "next1": 3, "next2": 3, "next3": 3, "next4": 3 } },
+        { "points": 4, "cost": { "next1": 6, "next2": 3 } },
+        { "points": 4, "cost": { "next1": 5, "next2": 3, "next3": 3 } },
+        { "points": 5, "cost": { "next1": 7, "next2": 3 } }
+      ]
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "note": "開発カードの背景画像設定です。variantsByColorAndLevel の 1/2/3 は Lv1/Lv2/Lv3 を表します。複数枚を入れると、その色・レベル内でカードIDから安定的に割り当てられます。",
+  "variantsByColorAndLevel": {
+    "white": {
+      "1": [{ "src": "assets/card-art/white-01.webp", "position": "50% 36%" }],
+      "2": [{ "src": "assets/card-art/white-02.webp", "position": "50% 36%" }],
+      "3": [{ "src": "assets/card-art/white-03.webp", "position": "50% 38%" }]
+    },
+    "blue": {
+      "1": [{ "src": "assets/card-art/blue-01.webp", "position": "50% 36%" }],
+      "2": [{ "src": "assets/card-art/blue-02.webp", "position": "50% 36%" }],
+      "3": [{ "src": "assets/card-art/blue-03.webp", "position": "48% 36%" }]
+    },
+    "green": {
+      "1": [{ "src": "assets/card-art/green-01.webp", "position": "50% 36%" }],
+      "2": [{ "src": "assets/card-art/green-02.webp", "position": "50% 36%" }],
+      "3": [{ "src": "assets/card-art/green-03.webp", "position": "50% 38%" }]
+    },
+    "red": {
+      "1": [{ "src": "assets/card-art/red-01.webp", "position": "50% 36%" }],
+      "2": [{ "src": "assets/card-art/red-02.webp", "position": "50% 36%" }],
+      "3": [{ "src": "assets/card-art/red-03.webp", "position": "50% 38%" }]
+    },
+    "black": {
+      "1": [{ "src": "assets/card-art/black-01.webp", "position": "50% 38%" }],
+      "2": [{ "src": "assets/card-art/black-02.webp", "position": "50% 38%" }],
+      "3": [{ "src": "assets/card-art/black-03.webp", "position": "48% 36%" }]
+    }
+  }
+}
