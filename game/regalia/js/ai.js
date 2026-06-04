@@ -62,6 +62,10 @@ export function scoreAction(playerView, action, difficulty = LV01) {
     return 500;
   }
 
+  if (action.type === "declineNoble") {
+    return scoreDeclineNobleAction(playerView);
+  }
+
   if (action.type === "discardTokens") {
     return scoreDiscardAction(playerView, action);
   }
@@ -152,6 +156,21 @@ function scoreDiscardAction(playerView, action) {
     penalty += (action.tokens[color] || 0) * value;
   });
   return 100 - penalty;
+}
+
+function scoreDeclineNobleAction(playerView) {
+  const player = playerView.player;
+  if (player.nobles.length > 0) {
+    return -400;
+  }
+  const score = getPlayerScore(player);
+  if (score >= 13) {
+    return 900;
+  }
+  if (score >= 11) {
+    return 520;
+  }
+  return -250;
 }
 
 function getWantedColors(playerView, difficulty) {
@@ -392,6 +411,7 @@ function scoreMonteCarloResult(game, rootPlayerId) {
       scoreMargin * 260 +
       rootScore * 80 +
       rootPlayer.nobles.length * 170 +
+      (rootPlayer.awakeningTokens || 0) * 70 +
       triggerScore
     );
   }
@@ -402,6 +422,7 @@ function scoreMonteCarloResult(game, rootPlayerId) {
     scoreMargin * 220 +
     rootScore * 65 +
     rootPlayer.nobles.length * 140 +
+    (rootPlayer.awakeningTokens || 0) * 55 +
     triggerScore
   );
 }
@@ -458,6 +479,9 @@ function evaluateActionTempo(action) {
   if (action.type === "claimNoble") {
     return 2;
   }
+  if (action.type === "declineNoble") {
+    return 2;
+  }
   if (action.type === "reserveCard") {
     return 1;
   }
@@ -489,6 +513,7 @@ function evaluateSearchState(game, rootPlayerId) {
     opponentBestScore * 75 +
     rootPlayer.cards.length * 24 +
     rootPlayer.nobles.length * 85 +
+    (rootPlayer.awakeningTokens || 0) * 34 +
     totalTokens(rootPlayer.tokens) * 1.5 +
     scoreBonusSpread(rootPlayer) +
     scoreVisibleBuyPotential(rootView) +
@@ -781,13 +806,13 @@ function estimateTokenTurnsToBuy(player, card, bank, allowDoubleTake) {
   const deficits = TOKEN_COLORS.map((color) =>
     Math.max(0, card.cost[color] - bonuses[color] - player.tokens[color])
   );
-  const gold = player.tokens.gold || 0;
+  const flexibleTokens = (player.tokens.gold || 0) + (player.awakeningTokens || 0);
   const doubleTakeColorIndexes = allowDoubleTake ? getDoubleTakeColorIndexes(bank) : [];
-  return countTokenTurnsUntilAffordable(deficits, gold, doubleTakeColorIndexes);
+  return countTokenTurnsUntilAffordable(deficits, flexibleTokens, doubleTakeColorIndexes);
 }
 
-function countTokenTurnsUntilAffordable(initialDeficits, gold, doubleTakeColorIndexes) {
-  if (sumDeficits(initialDeficits) <= gold) {
+function countTokenTurnsUntilAffordable(initialDeficits, flexibleTokens, doubleTakeColorIndexes) {
+  if (sumDeficits(initialDeficits) <= flexibleTokens) {
     return 0;
   }
 
@@ -814,7 +839,7 @@ function countTokenTurnsUntilAffordable(initialDeficits, gold, doubleTakeColorIn
       if (visited.has(key)) {
         continue;
       }
-      if (sumDeficits(nextDeficits) <= gold) {
+      if (sumDeficits(nextDeficits) <= flexibleTokens) {
         return current.turns + 1;
       }
       visited.add(key);

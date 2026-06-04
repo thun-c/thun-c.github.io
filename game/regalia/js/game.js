@@ -2,6 +2,8 @@ export const TOKEN_COLORS = ["white", "blue", "green", "red", "black"];
 export const ALL_TOKEN_COLORS = [...TOKEN_COLORS, "gold"];
 export const LEVEL_KEYS = ["level1", "level2", "level3"];
 export const END_SCORE = 15;
+export const NO_NOBLE_END_SCORE = 13;
+export const AWAKENING_TOKENS_PER_NOBLE = 2;
 
 export const COLOR_LABELS = {
   white: "光",
@@ -20,6 +22,8 @@ export const COLOR_NAMES = {
   black: "闇",
   gold: "全",
 };
+
+export const AWAKENING_TOKEN_LABEL = "覚醒";
 
 export function normalizeGameData(cardData, nobleData) {
   return {
@@ -86,6 +90,7 @@ export function createPlayer(id, config) {
     cards: [],
     reserved: [],
     nobles: [],
+    awakeningTokens: 0,
     score: 0,
   };
 }
@@ -115,6 +120,7 @@ export function restoreGame(game) {
     cards: (player.cards || []).map(normalizeCard),
     reserved: (player.reserved || []).map(normalizeCard),
     nobles: (player.nobles || []).map(normalizeNoble),
+    awakeningTokens: normalizeAwakeningTokens(player.awakeningTokens),
     score: player.score || 0,
   }));
   game.bank = normalizeTokens(game.bank);
@@ -157,6 +163,10 @@ export function getPlayerScore(player) {
     player.cards.reduce((sum, card) => sum + card.points, 0) +
     player.nobles.reduce((sum, noble) => sum + noble.points, 0)
   );
+}
+
+export function getPlayerEndScore(player) {
+  return player.nobles.length === 0 ? NO_NOBLE_END_SCORE : END_SCORE;
 }
 
 export function refreshScores(game) {
@@ -240,20 +250,23 @@ export function canBuyCard(player, card) {
 export function calculateAutoPayment(player, card) {
   const bonuses = getPlayerBonuses(player);
   const payment = emptyTokens();
-  let goldNeeded = 0;
+  let flexibleNeeded = 0;
 
   for (const color of TOKEN_COLORS) {
     const need = Math.max(0, card.cost[color] - bonuses[color]);
     const payGem = Math.min(player.tokens[color], need);
     payment[color] = payGem;
-    goldNeeded += need - payGem;
+    flexibleNeeded += need - payGem;
   }
 
-  if (goldNeeded > player.tokens.gold) {
+  const payGold = Math.min(player.tokens.gold, flexibleNeeded);
+  payment.gold = payGold;
+  const awakeningNeeded = flexibleNeeded - payGold;
+  if (awakeningNeeded > normalizeAwakeningTokens(player.awakeningTokens)) {
     return null;
   }
 
-  payment.gold = goldNeeded;
+  payment.awakening = awakeningNeeded;
   return payment;
 }
 
@@ -279,11 +292,17 @@ export function getLegalActions(game, playerId) {
   }
 
   if (game.phase === "noble") {
-    return game.pendingNobles.map((nobleId) => ({
-      type: "claimNoble",
-      playerId,
-      nobleId,
-    }));
+    return [
+      ...game.pendingNobles.map((nobleId) => ({
+        type: "claimNoble",
+        playerId,
+        nobleId,
+      })),
+      {
+        type: "declineNoble",
+        playerId,
+      },
+    ];
   }
 
   if (game.phase !== "action") {
@@ -324,6 +343,9 @@ export function applyAction(game, action) {
   }
   if (action.type === "claimNoble") {
     return claimNoble(game, action.nobleId);
+  }
+  if (action.type === "declineNoble") {
+    return declineNoble(game);
   }
   if (action.type === "passTurn") {
     return passTurn(game);
@@ -399,16 +421,16 @@ export function buyCard(game, source) {
     player.tokens[color] -= payment[color];
     game.bank[color] += payment[color];
   });
+  player.awakeningTokens -= payment.awakening || 0;
   player.cards.push(result.card);
 
   if (result.sourceType === "market") {
     drawToMarket(game, levelKey(result.card.level));
   }
 
-  addLog(
-    game,
-    `${player.name} が Lv${result.card.level} ${COLOR_LABELS[result.card.bonus]} のカードをスカウトしました。`
-  );
+  const awakeningText =
+    payment.awakening > 0 ? `（${AWAKENING_TOKEN_LABEL}${payment.awakening}個を消費）` : "";
+  addLog(game, `${player.name} が Lv${result.card.level} ${COLOR_LABELS[result.card.bonus]} のカードをスカウトしました。${awakeningText}`);
   return finishMainAction(game);
 }
 
@@ -441,6 +463,16 @@ export function claimNoble(game, nobleId) {
   }
   claimNobleInternal(game, nobleId);
   game.pendingNobles = [];
+  return completeTurn(game);
+}
+
+export function declineNoble(game) {
+  if (game.phase !== "noble") {
+    return game;
+  }
+  const player = getCurrentPlayer(game);
+  game.pendingNobles = [];
+  addLog(game, `${player.name} は紋章の獲得を見送りました。`);
   return completeTurn(game);
 }
 
@@ -485,6 +517,10 @@ export function formatTokenSelection(tokens) {
   const parts = ALL_TOKEN_COLORS
     .filter((color) => normalized[color] > 0)
     .map((color) => `${COLOR_LABELS[color]}${normalized[color]}`);
+  const awakening = normalizeAwakeningTokens(tokens?.awakening);
+  if (awakening > 0) {
+    parts.push(`${AWAKENING_TOKEN_LABEL}${awakening}`);
+  }
   return parts.length ? parts.join("・") : "なし";
 }
 
@@ -578,6 +614,10 @@ function normalizeNoble(noble) {
   }
 
   return normalized;
+}
+
+function normalizeAwakeningTokens(value) {
+  return Math.max(0, Number(value || 0));
 }
 
 function normalizeNobleArt(art) {
@@ -830,12 +870,7 @@ function resolveNoblesOrEndTurn(game) {
   const player = getCurrentPlayer(game);
   const eligible = getEligibleNobles(player, game.nobles);
 
-  if (eligible.length === 1) {
-    claimNobleInternal(game, eligible[0].id);
-    return completeTurn(game);
-  }
-
-  if (eligible.length > 1) {
+  if (eligible.length > 0) {
     game.phase = "noble";
     game.pendingNobles = eligible.map((noble) => noble.id);
     game.updatedAt = Date.now();
@@ -853,17 +888,19 @@ function claimNobleInternal(game, nobleId) {
   }
   const [noble] = game.nobles.splice(index, 1);
   player.nobles.push(noble);
+  player.awakeningTokens += AWAKENING_TOKENS_PER_NOBLE;
   refreshScores(game);
-  addLog(game, `${player.name} が紋章タイルを獲得しました。`);
+  addLog(game, `${player.name} が紋章タイルを獲得し、${AWAKENING_TOKEN_LABEL}${AWAKENING_TOKENS_PER_NOBLE}個を得ました。`);
 }
 
 function completeTurn(game) {
   refreshScores(game);
   const player = getCurrentPlayer(game);
 
-  if (game.finalRoundTriggeredBy === null && player.score >= END_SCORE) {
+  const endScore = getPlayerEndScore(player);
+  if (game.finalRoundTriggeredBy === null && player.score >= endScore) {
     game.finalRoundTriggeredBy = player.id;
-    addLog(game, `${player.name} が${END_SCORE}点に到達しました。このラウンドで終了します。`);
+    addLog(game, `${player.name} が${endScore}点に到達しました。このラウンドで終了します。`);
   }
 
   const nextTurnOrderIndex = (game.currentTurnOrderIndex + 1) % game.turnOrder.length;
@@ -924,6 +961,7 @@ function clonePlayerForView(player, includeReservedCards) {
       ? player.reserved.map((card) => ({ ...card, cost: { ...card.cost } }))
       : player.reserved.map(() => null),
     nobles: player.nobles.map((noble) => ({ ...noble, requirement: { ...noble.requirement } })),
+    awakeningTokens: normalizeAwakeningTokens(player.awakeningTokens),
     score: getPlayerScore(player),
   };
 }

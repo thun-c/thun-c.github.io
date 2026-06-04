@@ -13,6 +13,7 @@ import {
   getCurrentPlayer,
   getLegalActions,
   getPlayerBonuses,
+  getPlayerEndScore,
   levelKey,
   normalizeTokens,
   totalTokens,
@@ -202,6 +203,14 @@ function handleClick(event) {
       type: "claimNoble",
       playerId: getCurrentPlayer(currentGame).id,
       nobleId: target.dataset.nobleId,
+    });
+    return;
+  }
+
+  if (action === "decline-noble") {
+    applyAndReset({
+      type: "declineNoble",
+      playerId: getCurrentPlayer(currentGame).id,
     });
   }
 }
@@ -449,7 +458,7 @@ function getPlayerInstruction(game) {
 
   if (game.phase === "noble") {
     const choiceText = game.pendingNobles.length > 1 ? `${game.pendingNobles.length}枚の中から` : "";
-    return `${playerName}、条件を満たした紋章を${choiceText}1枚選択してください。`;
+    return `${playerName}、条件を満たした紋章を${choiceText}1枚選ぶか、獲得を見送ってください。`;
   }
 
   const selectedCount = totalTokens(selectedTokens);
@@ -483,7 +492,7 @@ function getCpuInstruction(game, playerName) {
     return `${playerName}、CPUが返却するマナを選んでいます。`;
   }
   if (game.phase === "noble") {
-    return `${playerName}、CPUが獲得する紋章を選んでいます。`;
+    return `${playerName}、CPUが紋章を獲得するか考えています。`;
   }
   return `${playerName}、CPUが行動を選んでいます。`;
 }
@@ -505,13 +514,17 @@ function renderNobleChoiceBanner(game) {
   }
 
   const player = getCurrentPlayer(game);
+  const canDecline = player.type === "human" && !currentOptions.busy;
   return `
     <section class="choice-banner">
       <div>
         <p class="eyebrow">Noble Visit</p>
-        <h2>${escapeHtml(player.name)} は獲得する紋章を1枚選んでください</h2>
+        <h2>${escapeHtml(player.name)} は紋章を獲得するか選んでください</h2>
       </div>
-      <span>${game.pendingNobles.length}枚から選択</span>
+      <div class="choice-actions">
+        <span>${game.pendingNobles.length}枚から選択</span>
+        <button class="ghost-button" type="button" data-action="decline-noble" ${canDecline ? "" : "disabled"}>獲得しない</button>
+      </div>
     </section>
   `;
 }
@@ -532,7 +545,7 @@ function renderNoble(game, noble) {
     <${tag} class="noble-tile ${art ? "has-art" : ""} ${isPending ? "is-pending" : ""} ${canClaim ? "is-claimable" : ""}" ${attrs} ${artAttrs}>
       ${art ? `<img class="noble-art" src="${escapeAttr(art.url)}" alt="" loading="lazy" decoding="async">` : ""}
       <strong class="noble-points">${noble.points}</strong>
-      ${isPending ? '<span class="choice-label">選択可</span>' : ""}
+      ${isPending ? '<span class="choice-label">獲得可</span>' : ""}
       <div class="cost-row">${renderCost(noble.requirement)}</div>
     </${tag}>
   `;
@@ -663,7 +676,7 @@ function renderPlayersPanel(game) {
   return `
     <div class="panel-title">
       <h2>プレイヤー</h2>
-      <span>${END_SCORE}点</span>
+      <span>無紋章13 / 紋章${END_SCORE}点</span>
     </div>
     <div class="player-detail-list">
       ${getPlayersInTurnOrder(game).map((player) => renderPlayerDetail(game, player)).join("")}
@@ -690,10 +703,11 @@ function renderPlayerDetail(game, player) {
           </div>
         </div>
         <div class="score-strip">
-          <div><span>点</span><strong>${player.score}</strong></div>
+          <div><span>点</span><strong>${player.score}/${getPlayerEndScore(player)}</strong></div>
           <div><span>カード</span><strong>${player.cards.length}</strong></div>
           <div><span>予約</span><strong>${player.reserved.length}/3</strong></div>
           <div><span>マナ</span><strong>${totalTokens(player.tokens)}/10</strong></div>
+          <div><span>覚醒</span><strong>${player.awakeningTokens || 0}</strong></div>
         </div>
         <div class="player-subsection">
           <h4>兵</h4>
@@ -901,18 +915,18 @@ function renderTokenLine(tokens) {
 function renderShortage(player, card) {
   const bonuses = getPlayerBonuses(player);
   const shortage = [];
-  let goldNeed = 0;
+  let flexibleNeed = 0;
 
   TOKEN_COLORS.forEach((color) => {
     const need = Math.max(0, card.cost[color] - bonuses[color]);
     const missing = Math.max(0, need - player.tokens[color]);
     if (missing > 0) {
       shortage.push(`${COLOR_LABELS[color]}${missing}`);
-      goldNeed += missing;
+      flexibleNeed += missing;
     }
   });
 
-  if (goldNeed > player.tokens.gold) {
+  if (flexibleNeed > (player.tokens.gold || 0) + (player.awakeningTokens || 0)) {
     return `不足: ${shortage.join("・")}`;
   }
   return "スカウト可能";
@@ -1214,7 +1228,7 @@ function getActionBlockedReason(game) {
     return "先にマナを10枚以下に返却してください。";
   }
   if (game.phase === "noble") {
-    return "先に獲得する紋章を選んでください。";
+    return "先に紋章を獲得するか、獲得を見送ってください。";
   }
   if (game.phase === "gameOver") {
     return "ゲームは終了しています。";
