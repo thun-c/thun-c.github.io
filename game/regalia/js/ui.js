@@ -10,6 +10,7 @@ import {
   canTakeTokens,
   emptyTokens,
   formatTokenSelection,
+  getAwakeningEffect,
   getCurrentPlayer,
   getLegalActions,
   getPlayerBonuses,
@@ -545,6 +546,7 @@ function renderNoble(game, noble) {
     <${tag} class="noble-tile ${art ? "has-art" : ""} ${isPending ? "is-pending" : ""} ${canClaim ? "is-claimable" : ""}" ${attrs} ${artAttrs}>
       ${art ? `<img class="noble-art" src="${escapeAttr(art.url)}" alt="" loading="lazy" decoding="async">` : ""}
       <strong class="noble-points">${noble.points}</strong>
+      ${renderAwakeningBadge(noble)}
       ${isPending ? '<span class="choice-label">獲得可</span>' : ""}
       <div class="cost-row">${renderCost(noble.requirement)}</div>
     </${tag}>
@@ -762,8 +764,13 @@ function renderClaimedNobles(player) {
   }
 
   return player.nobles
-    .map((noble) => `<span class="claimed-noble">${noble.points}点</span>`)
+    .map((noble) => `<span class="claimed-noble">${noble.points}点 ${escapeHtml(getAwakeningEffect(noble.awakeningEffectId).label)}</span>`)
     .join("");
+}
+
+function renderAwakeningBadge(noble) {
+  const effect = getAwakeningEffect(noble.awakeningEffectId);
+  return `<span class="awakening-badge" title="${escapeAttr(effect.description)}">${escapeHtml(effect.label)}</span>`;
 }
 
 function renderRulesPanel(rulePanel) {

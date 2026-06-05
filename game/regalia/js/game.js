@@ -3,7 +3,39 @@ export const ALL_TOKEN_COLORS = [...TOKEN_COLORS, "gold"];
 export const LEVEL_KEYS = ["level1", "level2", "level3"];
 export const END_SCORE = 15;
 export const NO_NOBLE_END_SCORE = 13;
-export const AWAKENING_TOKENS_PER_NOBLE = 2;
+
+export const AWAKENING_EFFECTS = {
+  dual: {
+    id: "dual",
+    label: "双醒",
+    description: "覚醒2個を得る",
+    value: 3,
+  },
+  single: {
+    id: "single",
+    label: "単醒",
+    description: "覚醒1個を得る",
+    value: 2,
+  },
+  treasury: {
+    id: "treasury",
+    label: "王庫",
+    description: "全マナ1個を得る",
+    value: 1,
+  },
+  supply: {
+    id: "supply",
+    label: "補給",
+    description: "条件色から通常マナを最大2個得る",
+    value: 1,
+  },
+};
+
+export const AWAKENING_EFFECT_POOLS_BY_PLAYER_COUNT = {
+  2: ["dual", "dual", "supply"],
+  3: ["treasury", "supply", "supply", "supply"],
+  4: ["dual", "dual", "single", "treasury", "supply"],
+};
 
 export const COLOR_LABELS = {
   white: "光",
@@ -37,6 +69,10 @@ export function createNewGame(playerConfigs, data) {
   const decks = buildDecks(data.cards);
   const playerCount = configs.length;
   const turnOrder = shuffle(configs.map((_, index) => index));
+  const nobles = assignAwakeningEffectsToNobles(
+    playerCount,
+    shuffle(data.nobles.slice()).slice(0, playerCount + 1)
+  );
   const game = {
     players: configs.map((config, index) => createPlayer(index, config)),
     turnOrder,
@@ -59,7 +95,7 @@ export function createNewGame(playerConfigs, data) {
       level2: [],
       level3: [],
     },
-    nobles: shuffle(data.nobles.slice()).slice(0, playerCount + 1),
+    nobles,
     pendingNobles: [],
     finalRoundTriggeredBy: null,
     log: [],
@@ -126,7 +162,10 @@ export function restoreGame(game) {
   game.bank = normalizeTokens(game.bank);
   game.decks = normalizeDecks(game.decks || {});
   game.market = normalizeDecks(game.market || {});
-  game.nobles = (game.nobles || []).map(normalizeNoble);
+  game.nobles = ensureAwakeningEffectsForNobles(
+    game.settings?.playerCount || game.players.length,
+    (game.nobles || []).map(normalizeNoble)
+  );
   game.pendingNobles = game.pendingNobles || [];
   game.log = game.log || [];
   game.winnerIds = game.winnerIds || [];
@@ -167,6 +206,20 @@ export function getPlayerScore(player) {
 
 export function getPlayerEndScore(player) {
   return player.nobles.length === 0 ? NO_NOBLE_END_SCORE : END_SCORE;
+}
+
+export function assignAwakeningEffectsToNobles(playerCount, nobles) {
+  const effectPool = shuffle(getAwakeningEffectPool(playerCount));
+  return nobles.map((noble, index) =>
+    normalizeNoble({
+      ...noble,
+      awakeningEffectId: effectPool[index] || "dual",
+    })
+  );
+}
+
+export function getAwakeningEffect(effectId) {
+  return AWAKENING_EFFECTS[normalizeAwakeningEffectId(effectId)] || AWAKENING_EFFECTS.dual;
 }
 
 export function refreshScores(game) {
@@ -613,11 +666,51 @@ function normalizeNoble(noble) {
     normalized.art = art;
   }
 
+  const awakeningEffectId = normalizeAwakeningEffectId(noble.awakeningEffectId);
+  if (awakeningEffectId) {
+    normalized.awakeningEffectId = awakeningEffectId;
+  }
+
   return normalized;
 }
 
 function normalizeAwakeningTokens(value) {
   return Math.max(0, Number(value || 0));
+}
+
+function normalizeAwakeningEffectId(effectId) {
+  const normalized = String(effectId || "");
+  return AWAKENING_EFFECTS[normalized] ? normalized : null;
+}
+
+function getAwakeningEffectPool(playerCount) {
+  const pool = AWAKENING_EFFECT_POOLS_BY_PLAYER_COUNT[playerCount] || AWAKENING_EFFECT_POOLS_BY_PLAYER_COUNT[4];
+  return pool.slice();
+}
+
+function ensureAwakeningEffectsForNobles(playerCount, nobles) {
+  if (nobles.every((noble) => noble.awakeningEffectId)) {
+    return nobles;
+  }
+
+  const remainingEffects = getAwakeningEffectPool(playerCount);
+  nobles.forEach((noble) => {
+    const index = remainingEffects.indexOf(noble.awakeningEffectId);
+    if (index >= 0) {
+      remainingEffects.splice(index, 1);
+    }
+  });
+
+  const shuffledEffects = shuffle(remainingEffects);
+  return nobles.map((noble) => {
+    if (noble.awakeningEffectId) {
+      return noble;
+    }
+    return normalizeNoble({
+      ...noble,
+      awakeningEffectId: shuffledEffects.pop() || "dual",
+    });
+  });
 }
 
 function normalizeNobleArt(art) {
@@ -888,9 +981,62 @@ function claimNobleInternal(game, nobleId) {
   }
   const [noble] = game.nobles.splice(index, 1);
   player.nobles.push(noble);
-  player.awakeningTokens += AWAKENING_TOKENS_PER_NOBLE;
+  const effectText = applyNobleAwakeningEffect(game, player, noble);
   refreshScores(game);
-  addLog(game, `${player.name} が紋章タイルを獲得し、${AWAKENING_TOKEN_LABEL}${AWAKENING_TOKENS_PER_NOBLE}個を得ました。`);
+  addLog(game, `${player.name} が紋章タイルを獲得しました。${effectText}`);
+}
+
+function applyNobleAwakeningEffect(game, player, noble) {
+  const effect = getAwakeningEffect(noble.awakeningEffectId);
+
+  if (effect.id === "dual" || effect.id === "single") {
+    const tokenCount = effect.id === "dual" ? 2 : 1;
+    player.awakeningTokens += tokenCount;
+    return `${effect.label}: ${AWAKENING_TOKEN_LABEL}${tokenCount}個を得ました。`;
+  }
+
+  if (effect.id === "treasury") {
+    if ((game.bank.gold || 0) <= 0) {
+      return `${effect.label}: 全マナは残っていませんでした。`;
+    }
+    if (totalTokens(player.tokens) >= 10) {
+      return `${effect.label}: マナ上限のため全マナは得ませんでした。`;
+    }
+    game.bank.gold -= 1;
+    player.tokens.gold += 1;
+    return `${effect.label}: 全マナ1個を得ました。`;
+  }
+
+  if (effect.id === "supply") {
+    const taken = takeSupplyAwakeningTokens(game, player, noble);
+    if (totalTokens(taken) === 0) {
+      return `${effect.label}: 得られる通常マナはありませんでした。`;
+    }
+    return `${effect.label}: ${formatTokenSelection(taken)} を得ました。`;
+  }
+
+  return `${effect.label}: 効果はありません。`;
+}
+
+function takeSupplyAwakeningTokens(game, player, noble) {
+  const taken = emptyTokens();
+  const availableSlots = Math.max(0, 10 - totalTokens(player.tokens));
+  const maxTake = Math.min(2, availableSlots);
+  if (maxTake <= 0) {
+    return taken;
+  }
+
+  TOKEN_COLORS
+    .filter((color) => (noble.requirement[color] || 0) > 0 && (game.bank[color] || 0) > 0)
+    .sort((a, b) => game.bank[b] - game.bank[a] || TOKEN_COLORS.indexOf(a) - TOKEN_COLORS.indexOf(b))
+    .slice(0, maxTake)
+    .forEach((color) => {
+      game.bank[color] -= 1;
+      player.tokens[color] += 1;
+      taken[color] += 1;
+    });
+
+  return taken;
 }
 
 function completeTurn(game) {

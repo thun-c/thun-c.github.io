@@ -444,6 +444,28 @@ button.noble-tile.is-claimable {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
 }
 
+.awakening-badge {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  border: 1px solid rgba(91, 72, 30, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 244, 196, 0.86);
+  color: #3f3321;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0 8px;
+}
+
+.noble-tile.has-art .awakening-badge {
+  border-color: rgba(255, 244, 196, 0.62);
+  background: rgba(18, 25, 46, 0.78);
+  color: #fff6c6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+
 .noble-tile.has-art .cost-row {
   align-self: end;
 }

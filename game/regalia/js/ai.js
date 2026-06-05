@@ -5,6 +5,7 @@ import {
   applyAction,
   canBuyCard,
   createPlayerView,
+  getAwakeningEffect,
   getLegalActions,
   getPlayerBonuses,
   getPlayerScore,
@@ -59,7 +60,7 @@ export function chooseActionByHeuristic(playerView, actions, difficulty = LV01) 
 export function scoreAction(playerView, action, difficulty = LV01) {
   const level = normalizeDifficulty(difficulty);
   if (action.type === "claimNoble") {
-    return 500;
+    return 500 + scoreAwakeningEffectForNoble(playerView, action);
   }
 
   if (action.type === "declineNoble") {
@@ -171,6 +172,24 @@ function scoreDeclineNobleAction(playerView) {
     return 520;
   }
   return -250;
+}
+
+function scoreAwakeningEffectForNoble(playerView, action) {
+  const noble = playerView.nobles.find((candidate) => candidate.id === action.nobleId);
+  const effect = getAwakeningEffect(noble?.awakeningEffectId);
+  if (effect.id === "dual") {
+    return 180;
+  }
+  if (effect.id === "single") {
+    return 120;
+  }
+  if (effect.id === "supply") {
+    return totalTokens(playerView.player.tokens) >= 10 ? 35 : 80;
+  }
+  if (effect.id === "treasury") {
+    return playerView.bank.gold > 0 && totalTokens(playerView.player.tokens) < 10 ? 75 : 30;
+  }
+  return 0;
 }
 
 function getWantedColors(playerView, difficulty) {
