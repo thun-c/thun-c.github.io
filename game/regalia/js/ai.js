@@ -7,6 +7,7 @@ import {
   createPlayerView,
   getAwakeningEffect,
   getLegalActions,
+  getNoNobleEndScore,
   getPlayerBonuses,
   getPlayerScore,
   totalTokens,
@@ -165,10 +166,11 @@ function scoreDeclineNobleAction(playerView) {
     return -400;
   }
   const score = getPlayerScore(player);
-  if (score >= 13) {
+  const noNobleEndScore = getNoNobleEndScore(playerView.players.length);
+  if (score >= noNobleEndScore) {
     return 900;
   }
-  if (score >= 11) {
+  if (score >= noNobleEndScore - 2) {
     return 520;
   }
   return -250;

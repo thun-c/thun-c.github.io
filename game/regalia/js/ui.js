@@ -13,6 +13,7 @@ import {
   getAwakeningEffect,
   getCurrentPlayer,
   getLegalActions,
+  getNoNobleEndScore,
   getPlayerBonuses,
   getPlayerEndScore,
   levelKey,
@@ -675,10 +676,11 @@ function renderSelectedTokens(tokens, removeAction) {
 }
 
 function renderPlayersPanel(game) {
+  const noNobleEndScore = getNoNobleEndScore(game.players.length);
   return `
     <div class="panel-title">
       <h2>プレイヤー</h2>
-      <span>無紋章13 / 紋章${END_SCORE}点</span>
+      <span>無紋章${noNobleEndScore} / 紋章${END_SCORE}点</span>
     </div>
     <div class="player-detail-list">
       ${getPlayersInTurnOrder(game).map((player) => renderPlayerDetail(game, player)).join("")}
@@ -705,7 +707,7 @@ function renderPlayerDetail(game, player) {
           </div>
         </div>
         <div class="score-strip">
-          <div><span>点</span><strong>${player.score}/${getPlayerEndScore(player)}</strong></div>
+          <div><span>点</span><strong>${player.score}/${getPlayerEndScore(player, game.players.length)}</strong></div>
           <div><span>カード</span><strong>${player.cards.length}</strong></div>
           <div><span>予約</span><strong>${player.reserved.length}/3</strong></div>
           <div><span>マナ</span><strong>${totalTokens(player.tokens)}/10</strong></div>

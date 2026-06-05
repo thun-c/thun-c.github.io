@@ -3,6 +3,9 @@ export const ALL_TOKEN_COLORS = [...TOKEN_COLORS, "gold"];
 export const LEVEL_KEYS = ["level1", "level2", "level3"];
 export const END_SCORE = 15;
 export const NO_NOBLE_END_SCORE = 13;
+export const NO_NOBLE_END_SCORE_BY_PLAYER_COUNT = {
+  3: 12,
+};
 
 export const AWAKENING_EFFECTS = {
   dual: {
@@ -204,8 +207,12 @@ export function getPlayerScore(player) {
   );
 }
 
-export function getPlayerEndScore(player) {
-  return player.nobles.length === 0 ? NO_NOBLE_END_SCORE : END_SCORE;
+export function getNoNobleEndScore(playerCount) {
+  return NO_NOBLE_END_SCORE_BY_PLAYER_COUNT[playerCount] || NO_NOBLE_END_SCORE;
+}
+
+export function getPlayerEndScore(player, playerCount = null) {
+  return player.nobles.length === 0 ? getNoNobleEndScore(playerCount) : END_SCORE;
 }
 
 export function assignAwakeningEffectsToNobles(playerCount, nobles) {
@@ -1043,7 +1050,7 @@ function completeTurn(game) {
   refreshScores(game);
   const player = getCurrentPlayer(game);
 
-  const endScore = getPlayerEndScore(player);
+  const endScore = getPlayerEndScore(player, game.players.length);
   if (game.finalRoundTriggeredBy === null && player.score >= endScore) {
     game.finalRoundTriggeredBy = player.id;
     addLog(game, `${player.name} が${endScore}点に到達しました。このラウンドで終了します。`);
