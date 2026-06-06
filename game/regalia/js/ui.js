@@ -31,6 +31,8 @@ let modal = null;
 let selectedTokens = emptyTokens();
 let selectedDiscard = emptyTokens();
 let noticeTimer = null;
+let cutInTimer = null;
+let activeCutInId = null;
 
 const setupState = {
   playerCount: 2,
@@ -61,17 +63,20 @@ export function render(game, data, options = {}) {
   }
 
   if (!game) {
+    clearAwakeningCutInTimer();
     root.innerHTML = renderSetup(options);
     return;
   }
 
   root.innerHTML = renderGame(game, data, options);
+  scheduleAwakeningCutInDismiss(game);
 }
 
 export function resetTransientState() {
   modal = null;
   selectedTokens = emptyTokens();
   selectedDiscard = emptyTokens();
+  clearAwakeningCutInTimer();
 }
 
 function handleClick(event) {
@@ -114,6 +119,11 @@ function handleClick(event) {
     }
     resetTransientState();
     handlers.onNewGame();
+    return;
+  }
+
+  if (action === "dismiss-awakening") {
+    applyAndReset({ type: "clearAwakeningCutIn" });
     return;
   }
 
@@ -417,6 +427,54 @@ function renderGame(game, data, options) {
       </main>
       ${renderModal(game)}
       ${options.busy ? '<div class="busy-layer">CPU思考中...</div>' : ""}
+      ${renderAwakeningCutIn(game)}
+    </div>
+  `;
+}
+
+function renderAwakeningCutIn(game) {
+  const cutIn = game.awakeningCutIn;
+  if (!cutIn) {
+    return "";
+  }
+  const noble = cutIn.noble || {};
+  const art = getNobleArtData(noble);
+  const artAttrs = art
+    ? `style="--cutin-art-position: ${escapeAttr(art.position)};"`
+    : "";
+  const artImage = art
+    ? `<img class="awakening-cutin-art" src="${escapeAttr(art.url)}" alt="" loading="eager" decoding="async">`
+    : "";
+  const nobleName = getNobleDisplayName(noble);
+  const title = `${cutIn.effectLabel || "覚醒"} 覚醒`;
+  const nobleText = nobleName ? `${nobleName} / ${noble.points || 0}点` : `${noble.points || 0}点の紋章`;
+  const manualDismiss = cutIn.autoDismiss === false;
+  const roleAttrs = manualDismiss
+    ? `role="dialog" aria-modal="true" aria-label="${escapeAttr(title)}"`
+    : `role="status" aria-live="polite" aria-label="${escapeAttr(title)}"`;
+  const backdropClass = `awakening-cutin-backdrop${manualDismiss ? " is-manual" : ""}`;
+  return `
+    <div class="${backdropClass}" data-action="dismiss-awakening">
+      <section class="awakening-cutin effect-${escapeAttr(cutIn.effectId || "unknown")}" ${roleAttrs} ${artAttrs}>
+        ${artImage}
+        <div class="awakening-cutin-sheen"></div>
+        <div class="awakening-cutin-content">
+          <p class="awakening-cutin-kicker">${escapeHtml(cutIn.playerName || "")}</p>
+          <h2>${escapeHtml(title)}</h2>
+          <p class="awakening-cutin-summary">${escapeHtml(cutIn.summary || "")}</p>
+          ${cutIn.detail ? `<p class="awakening-cutin-detail">${escapeHtml(cutIn.detail)}</p>` : ""}
+          <span class="awakening-cutin-noble">${escapeHtml(nobleText)}</span>
+          ${
+            manualDismiss
+              ? `<div class="awakening-cutin-actions">
+                  <p>効果を確認してから閉じてください</p>
+                  <button class="awakening-cutin-dismiss" type="button" data-action="dismiss-awakening">閉じる</button>
+                </div>`
+              : ""
+          }
+        </div>
+        <button class="awakening-cutin-close" type="button" data-action="dismiss-awakening" title="閉じる">×</button>
+      </section>
     </div>
   `;
 }
@@ -1269,6 +1327,37 @@ function disabledAttrs(reason) {
     return "";
   }
   return `aria-disabled="true" data-disabled-reason="${escapeAttr(reason)}"`;
+}
+
+function scheduleAwakeningCutInDismiss(game) {
+  const cutIn = game?.awakeningCutIn;
+  if (!cutIn) {
+    clearAwakeningCutInTimer();
+    return;
+  }
+  if (cutIn.autoDismiss === false) {
+    clearAwakeningCutInTimer();
+    activeCutInId = cutIn.id;
+    return;
+  }
+  if (activeCutInId === cutIn.id && cutInTimer !== null) {
+    return;
+  }
+  clearAwakeningCutInTimer();
+  activeCutInId = cutIn.id;
+  cutInTimer = window.setTimeout(() => {
+    if (currentGame?.awakeningCutIn?.id === cutIn.id) {
+      handlers.onApplyAction({ type: "clearAwakeningCutIn" });
+    }
+  }, 1500);
+}
+
+function clearAwakeningCutInTimer() {
+  if (cutInTimer !== null) {
+    window.clearTimeout(cutInTimer);
+    cutInTimer = null;
+  }
+  activeCutInId = null;
 }
 
 function showNotice(message) {

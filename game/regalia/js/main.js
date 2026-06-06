@@ -161,6 +161,11 @@ function continueCpuTurnIfNeeded() {
     renderNow();
     return;
   }
+  if (game.awakeningCutIn) {
+    busy = false;
+    renderNow();
+    return;
+  }
 
   const currentPlayer = getCurrentPlayer(game);
   if (currentPlayer.type !== "cpu") {

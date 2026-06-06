@@ -108,6 +108,7 @@ export function createNewGame(playerConfigs, data) {
     },
     nobles,
     pendingNobles: [],
+    awakeningCutIn: null,
     finalRoundTriggeredBy: null,
     log: [],
     winnerIds: [],
@@ -182,6 +183,7 @@ export function restoreGame(game) {
     (game.nobles || []).map(normalizeNoble)
   );
   game.pendingNobles = game.pendingNobles || [];
+  game.awakeningCutIn = normalizeAwakeningCutIn(game.awakeningCutIn);
   game.log = game.log || [];
   game.winnerIds = game.winnerIds || [];
   game.phase = game.phase || "action";
@@ -406,7 +408,17 @@ export function getLegalActions(game, playerId) {
 }
 
 export function applyAction(game, action) {
-  if (!action || game.phase === "gameOver") {
+  if (!action) {
+    return game;
+  }
+
+  if (action.type === "clearAwakeningCutIn") {
+    game.awakeningCutIn = null;
+    game.updatedAt = Date.now();
+    return game;
+  }
+
+  if (game.phase === "gameOver") {
     return game;
   }
 
@@ -713,6 +725,23 @@ function normalizeAwakeningTokens(value) {
 
 function normalizePrestigeBonus(value) {
   return Math.max(0, Number(value || 0));
+}
+
+function normalizeAwakeningCutIn(cutIn) {
+  if (!cutIn || typeof cutIn !== "object") {
+    return null;
+  }
+  const effect = getAwakeningEffect(cutIn.effectId);
+  return {
+    id: String(cutIn.id || Date.now()),
+    effectId: effect.id,
+    effectLabel: String(cutIn.effectLabel || effect.label),
+    playerName: String(cutIn.playerName || ""),
+    autoDismiss: cutIn.autoDismiss !== false,
+    noble: normalizeNoble(cutIn.noble || {}),
+    summary: String(cutIn.summary || effect.description),
+    detail: String(cutIn.detail || ""),
+  };
 }
 
 function normalizeAwakeningEffectId(effectId) {
@@ -1053,36 +1082,71 @@ function applyNobleAwakeningEffect(game, player, noble) {
   if (effect.id === "dual" || effect.id === "single") {
     const tokenCount = effect.id === "dual" ? 2 : 1;
     player.awakeningTokens += tokenCount;
-    return `${effect.label}: ${AWAKENING_TOKEN_LABEL}${tokenCount}個を得ました。`;
+    const summary = `${AWAKENING_TOKEN_LABEL}${tokenCount}個を得ました`;
+    setAwakeningCutIn(game, player, noble, effect, summary, "カード購入時の不足コストを補えます");
+    return `${effect.label}: ${summary}。`;
   }
 
   if (effect.id === "glory") {
     player.prestigeBonus = normalizePrestigeBonus(player.prestigeBonus) + 1;
     player.awakeningTokens += 1;
-    return `${effect.label}: 威信+1と${AWAKENING_TOKEN_LABEL}1個を得ました。`;
+    const summary = `威信+1と${AWAKENING_TOKEN_LABEL}1個を得ました`;
+    setAwakeningCutIn(game, player, noble, effect, summary, "終了条件へ近づき、購入補助も残ります");
+    return `${effect.label}: ${summary}。`;
   }
 
   if (effect.id === "treasury") {
     if ((game.bank.gold || 0) <= 0) {
-      return `${effect.label}: 全マナは残っていませんでした。`;
+      const summary = "全マナは残っていませんでした";
+      setAwakeningCutIn(game, player, noble, effect, summary, "銀行の全マナが空です");
+      return `${effect.label}: ${summary}。`;
     }
     if (totalTokens(player.tokens) >= 10) {
-      return `${effect.label}: マナ上限のため全マナは得ませんでした。`;
+      const summary = "マナ上限のため全マナは得ませんでした";
+      setAwakeningCutIn(game, player, noble, effect, summary, "手元のマナは10枚までです");
+      return `${effect.label}: ${summary}。`;
     }
     game.bank.gold -= 1;
     player.tokens.gold += 1;
-    return `${effect.label}: 全マナ1個を得ました。`;
+    const summary = "全マナ1個を得ました";
+    setAwakeningCutIn(game, player, noble, effect, summary, "支払い時に任意の色として使えます");
+    return `${effect.label}: ${summary}。`;
   }
 
   if (effect.id === "supply") {
     const taken = takeSupplyAwakeningTokens(game, player, noble);
     if (totalTokens(taken) === 0) {
-      return `${effect.label}: 得られる通常マナはありませんでした。`;
+      const summary = "得られる通常マナはありませんでした";
+      setAwakeningCutIn(game, player, noble, effect, summary, "銀行かマナ上限の条件を満たせませんでした");
+      return `${effect.label}: ${summary}。`;
     }
-    return `${effect.label}: ${formatTokenSelection(taken)} を得ました。`;
+    const summary = `${formatTokenSelection(taken)} を得ました`;
+    setAwakeningCutIn(game, player, noble, effect, summary, "条件色から通常マナを補給しました");
+    return `${effect.label}: ${summary}。`;
   }
 
+  setAwakeningCutIn(game, player, noble, effect, "効果はありません", "");
   return `${effect.label}: 効果はありません。`;
+}
+
+function setAwakeningCutIn(game, player, noble, effect, summary, detail) {
+  game.awakeningCutIn = {
+    id: `${Date.now()}-${player.id}-${noble.id}-${effect.id}`,
+    effectId: effect.id,
+    effectLabel: effect.label,
+    playerName: player.name,
+    autoDismiss: player.type !== "human",
+    noble: {
+      id: noble.id,
+      name: noble.name,
+      points: noble.points,
+      requirement: { ...noble.requirement },
+      awakeningEffectId: noble.awakeningEffectId,
+      ...(noble.art ? { art: noble.art } : {}),
+    },
+    summary,
+    detail,
+  };
 }
 
 function takeSupplyAwakeningTokens(game, player, noble) {
