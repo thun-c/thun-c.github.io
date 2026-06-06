@@ -36,7 +36,7 @@ export const AWAKENING_EFFECTS = {
   supply: {
     id: "supply",
     label: "補給",
-    description: "条件色から通常マナを最大2個得る",
+    description: "条件色の通常マナを最大2個得る。銀行に多い色優先、同数は光→雷→精→炎→闇順",
     value: 1,
   },
 };
