@@ -182,6 +182,9 @@ function scoreAwakeningEffectForNoble(playerView, action) {
   if (effect.id === "dual") {
     return 180;
   }
+  if (effect.id === "glory") {
+    return 230;
+  }
   if (effect.id === "single") {
     return 120;
   }

@@ -21,6 +21,12 @@ export const AWAKENING_EFFECTS = {
     description: "覚醒1個を得る",
     value: 2,
   },
+  glory: {
+    id: "glory",
+    label: "栄冠",
+    description: "威信+1と覚醒1個を得る",
+    value: 4,
+  },
   treasury: {
     id: "treasury",
     label: "王庫",
@@ -38,7 +44,7 @@ export const AWAKENING_EFFECTS = {
 export const AWAKENING_EFFECT_POOLS_BY_PLAYER_COUNT = {
   2: ["dual", "dual", "supply"],
   3: ["treasury", "supply", "supply", "supply"],
-  4: ["dual", "dual", "single", "treasury", "supply"],
+  4: ["dual", "dual", "glory", "treasury", "supply"],
 };
 
 export const COLOR_LABELS = {
@@ -131,6 +137,7 @@ export function createPlayer(id, config) {
     reserved: [],
     nobles: [],
     awakeningTokens: 0,
+    prestigeBonus: 0,
     score: 0,
   };
 }
@@ -161,6 +168,7 @@ export function restoreGame(game) {
     reserved: (player.reserved || []).map(normalizeCard),
     nobles: (player.nobles || []).map(normalizeNoble),
     awakeningTokens: normalizeAwakeningTokens(player.awakeningTokens),
+    prestigeBonus: normalizePrestigeBonus(player.prestigeBonus),
     score: player.score || 0,
   }));
   game.bank = normalizeTokens(game.bank);
@@ -204,7 +212,8 @@ export function getPlayerBonuses(player) {
 export function getPlayerScore(player) {
   return (
     player.cards.reduce((sum, card) => sum + card.points, 0) +
-    player.nobles.reduce((sum, noble) => sum + noble.points, 0)
+    player.nobles.reduce((sum, noble) => sum + noble.points, 0) +
+    normalizePrestigeBonus(player.prestigeBonus)
   );
 }
 
@@ -686,6 +695,10 @@ function normalizeAwakeningTokens(value) {
   return Math.max(0, Number(value || 0));
 }
 
+function normalizePrestigeBonus(value) {
+  return Math.max(0, Number(value || 0));
+}
+
 function normalizeAwakeningEffectId(effectId) {
   const normalized = String(effectId || "");
   return AWAKENING_EFFECTS[normalized] ? normalized : null;
@@ -1003,6 +1016,12 @@ function applyNobleAwakeningEffect(game, player, noble) {
     return `${effect.label}: ${AWAKENING_TOKEN_LABEL}${tokenCount}個を得ました。`;
   }
 
+  if (effect.id === "glory") {
+    player.prestigeBonus = normalizePrestigeBonus(player.prestigeBonus) + 1;
+    player.awakeningTokens += 1;
+    return `${effect.label}: 威信+1と${AWAKENING_TOKEN_LABEL}1個を得ました。`;
+  }
+
   if (effect.id === "treasury") {
     if ((game.bank.gold || 0) <= 0) {
       return `${effect.label}: 全マナは残っていませんでした。`;
@@ -1116,6 +1135,7 @@ function clonePlayerForView(player, includeReservedCards) {
       : player.reserved.map(() => null),
     nobles: player.nobles.map((noble) => ({ ...noble, requirement: { ...noble.requirement } })),
     awakeningTokens: normalizeAwakeningTokens(player.awakeningTokens),
+    prestigeBonus: normalizePrestigeBonus(player.prestigeBonus),
     score: getPlayerScore(player),
   };
 }
