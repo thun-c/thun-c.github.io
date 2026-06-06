@@ -400,7 +400,7 @@ button[aria-disabled="true"] {
   object-position: var(--noble-art-position);
 }
 
-.noble-tile.has-art > :not(.noble-art) {
+.noble-tile.has-art > :not(.noble-art):not(.awakening-badge):not(.choice-label) {
   position: relative;
   z-index: 2;
 }
@@ -445,7 +445,10 @@ button.noble-tile.is-claimable {
 }
 
 .awakening-badge {
-  justify-self: start;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   min-height: 22px;
@@ -477,8 +480,9 @@ button.noble-tile.is-claimable {
 
 .choice-label {
   position: absolute;
-  top: 8px;
+  top: 34px;
   right: 8px;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   min-height: 24px;
