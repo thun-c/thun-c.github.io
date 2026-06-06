@@ -44,7 +44,7 @@ export const AWAKENING_EFFECTS = {
 export const AWAKENING_EFFECT_POOLS_BY_PLAYER_COUNT = {
   2: ["dual", "dual", "supply"],
   3: ["treasury", "supply", "supply", "supply"],
-  4: ["dual", "dual", "glory", "treasury", "supply"],
+  4: ["dual", "dual", "glory", "single", "single"],
 };
 
 export const COLOR_LABELS = {
