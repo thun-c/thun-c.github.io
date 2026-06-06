@@ -294,16 +294,29 @@ export function canTakeTokens(game, selection) {
 
   const selectedColors = TOKEN_COLORS.filter((color) => tokens[color] > 0);
   const count = selectedColors.reduce((sum, color) => sum + tokens[color], 0);
-  if (count !== 2 && count !== 3) {
+  if (count < 1 || count > 3) {
     return false;
   }
 
   if (selectedColors.some((color) => tokens[color] > game.bank[color])) {
     return false;
   }
+  if (selectedColors.some((color) => tokens[color] > 2)) {
+    return false;
+  }
 
-  if (selectedColors.length === 1 && tokens[selectedColors[0]] === 2) {
-    return game.bank[selectedColors[0]] >= 4;
+  const availableColors = getAvailableNormalTokenColors(game.bank);
+
+  if (selectedColors.length === 1) {
+    const color = selectedColors[0];
+    if (tokens[color] === 2) {
+      return game.bank[color] >= 4 || availableColors.length === 1;
+    }
+    return availableColors.length === 1 && game.bank[color] === 1;
+  }
+
+  if (selectedColors.length === 2) {
+    return count === 2 && availableColors.length === 2 && selectedColors.every((color) => tokens[color] === 1);
   }
 
   return count === 3 && selectedColors.length === 3 && selectedColors.every((color) => tokens[color] === 1);
@@ -786,7 +799,20 @@ function drawToMarket(game, key) {
 
 function getTakeTokenActions(game, playerId) {
   const actions = [];
-  const available = TOKEN_COLORS.filter((color) => game.bank[color] > 0);
+  const actionKeys = new Set();
+  const available = getAvailableNormalTokenColors(game.bank);
+
+  const addTakeTokensAction = (tokens) => {
+    if (!canTakeTokens(game, tokens)) {
+      return;
+    }
+    const key = TOKEN_COLORS.map((color) => tokens[color] || 0).join(",");
+    if (actionKeys.has(key)) {
+      return;
+    }
+    actionKeys.add(key);
+    actions.push({ type: "takeTokens", playerId, tokens });
+  };
 
   if (available.length >= 3) {
     for (const combination of combinations(available, 3)) {
@@ -794,21 +820,32 @@ function getTakeTokenActions(game, playerId) {
       combination.forEach((color) => {
         tokens[color] = 1;
       });
-      if (canTakeTokens(game, tokens)) {
-        actions.push({ type: "takeTokens", playerId, tokens });
-      }
+      addTakeTokensAction(tokens);
     }
+  } else if (available.length === 2) {
+    const tokens = emptyTokens();
+    available.forEach((color) => {
+      tokens[color] = 1;
+    });
+    addTakeTokensAction(tokens);
+  } else if (available.length === 1) {
+    const tokens = emptyTokens();
+    const color = available[0];
+    tokens[color] = Math.min(2, game.bank[color]);
+    addTakeTokensAction(tokens);
   }
 
   TOKEN_COLORS.forEach((color) => {
     const tokens = emptyTokens();
     tokens[color] = 2;
-    if (canTakeTokens(game, tokens)) {
-      actions.push({ type: "takeTokens", playerId, tokens });
-    }
+    addTakeTokensAction(tokens);
   });
 
   return actions;
+}
+
+function getAvailableNormalTokenColors(bank) {
+  return TOKEN_COLORS.filter((color) => (bank[color] || 0) > 0);
 }
 
 function getBuyActions(game, playerId) {

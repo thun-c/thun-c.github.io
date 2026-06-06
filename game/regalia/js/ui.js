@@ -1175,6 +1175,10 @@ function getPartialTakeSelectionReason(game, selection) {
     return null;
   }
 
+  if (canTakeTokens(game, tokens)) {
+    return null;
+  }
+
   if (selected.length === 1 && tokens[selected[0]] <= 2) {
     if (tokens[selected[0]] === 1 || game.bank[selected[0]] >= 4) {
       return null;
@@ -1215,11 +1219,15 @@ function getConfirmTokensDisabledReason(game, isAction) {
 
   const selectedCount = totalTokens(selectedTokens);
   if (selectedCount === 0) {
-    return "異なる3種類、または同じ種類2枚を選んでください。";
+    return "異なる3種類、同じ種類2枚、または場に3色ない時は残っている色を選んでください。";
   }
 
   const selectedColors = TOKEN_COLORS.filter((color) => selectedTokens[color] > 0);
   if (selectedColors.length === 1 && selectedTokens[selectedColors[0]] === 1) {
+    const availableColors = getAvailableNormalTokenColors(game);
+    if (availableColors.length === 2) {
+      return "場に残っているもう1色も選んでください。";
+    }
     return "同じ種類をもう1枚選ぶか、異なる3種類になるように選んでください。";
   }
   if (selectedColors.length === 2 && selectedColors.every((color) => selectedTokens[color] === 1)) {
@@ -1227,6 +1235,10 @@ function getConfirmTokensDisabledReason(game, isAction) {
   }
 
   return getPartialTakeSelectionReason(game, selectedTokens) || "この組み合わせでは取れません。";
+}
+
+function getAvailableNormalTokenColors(game) {
+  return TOKEN_COLORS.filter((color) => (game.bank[color] || 0) > 0);
 }
 
 function getActionBlockedReason(game) {
