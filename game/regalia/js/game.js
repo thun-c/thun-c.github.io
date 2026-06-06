@@ -5,6 +5,7 @@ export const END_SCORE = 15;
 export const NO_NOBLE_END_SCORE = 13;
 export const NO_NOBLE_END_SCORE_BY_PLAYER_COUNT = {
   3: 12,
+  4: 12,
 };
 
 export const AWAKENING_EFFECTS = {
