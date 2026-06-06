@@ -75,7 +75,7 @@ export function normalizeGameData(cardData, nobleData) {
 }
 
 export function createNewGame(playerConfigs, data) {
-  const configs = playerConfigs.slice(0, 4);
+  const configs = assignAutomaticPlayerNames(playerConfigs.slice(0, 4));
   const decks = buildDecks(data.cards);
   const playerCount = configs.length;
   const turnOrder = shuffle(configs.map((_, index) => index));
@@ -94,7 +94,8 @@ export function createNewGame(playerConfigs, data) {
     settings: {
       playerCount,
       players: configs.map((config) => ({
-        ...config,
+        type: config.type,
+        name: config.name,
         difficulty: config.type === "cpu" ? normalizeCpuDifficulty(config.difficulty) : null,
       })),
     },
@@ -127,11 +128,13 @@ export function createNewGame(playerConfigs, data) {
 }
 
 export function createPlayer(id, config) {
+  const type = config.type || "human";
+  const difficulty = type === "cpu" ? normalizeCpuDifficulty(config.difficulty) : null;
   return {
     id,
-    name: config.name || defaultPlayerName(id, config.type),
-    type: config.type || "human",
-    difficulty: config.type === "cpu" ? normalizeCpuDifficulty(config.difficulty) : null,
+    name: config.name || defaultPlayerName(id, type, difficulty),
+    type,
+    difficulty,
     tokens: emptyTokens(),
     cards: [],
     reserved: [],
@@ -158,11 +161,11 @@ export function restoreGame(game) {
   if (!game) {
     return null;
   }
-  game.players = (game.players || []).map((player, index) => ({
+  game.players = assignAutomaticPlayerNames((game.players || []).map((player, index) => ({
     id: index,
-    name: player.name || defaultPlayerName(index, player.type),
     type: player.type || "human",
     difficulty: player.type === "cpu" ? normalizeCpuDifficulty(player.difficulty) : null,
+    name: player.name,
     tokens: normalizeTokens(player.tokens),
     cards: (player.cards || []).map(normalizeCard),
     reserved: (player.reserved || []).map(normalizeCard),
@@ -170,7 +173,7 @@ export function restoreGame(game) {
     awakeningTokens: normalizeAwakeningTokens(player.awakeningTokens),
     prestigeBonus: normalizePrestigeBonus(player.prestigeBonus),
     score: player.score || 0,
-  }));
+  })));
   game.bank = normalizeTokens(game.bank);
   game.decks = normalizeDecks(game.decks || {});
   game.market = normalizeDecks(game.market || {});
@@ -1177,8 +1180,65 @@ function clonePlayerForView(player, includeReservedCards) {
   };
 }
 
-function defaultPlayerName(id, type) {
-  return type === "cpu" ? `CPU ${id + 1}` : `Player ${id + 1}`;
+function assignAutomaticPlayerNames(configs) {
+  const cpuCountsByDifficulty = {};
+  const cpuTotalsByDifficulty = countCpusByDifficulty(configs);
+  return configs.map((config, index) => {
+    const type = config.type || "human";
+    const difficulty = type === "cpu" ? normalizeCpuDifficulty(config.difficulty) : null;
+    if (type !== "cpu") {
+      return {
+        ...config,
+        type,
+        difficulty: null,
+        name: config.name || defaultPlayerName(index, type),
+      };
+    }
+
+    const cpuIndex = cpuCountsByDifficulty[difficulty] || 0;
+    cpuCountsByDifficulty[difficulty] = cpuIndex + 1;
+    return {
+      ...config,
+      type,
+      difficulty,
+      name: formatCpuName(difficulty, cpuIndex, cpuTotalsByDifficulty[difficulty] || 0),
+    };
+  });
+}
+
+function defaultPlayerName(id, type, difficulty = "lv01") {
+  return type === "cpu" ? formatCpuName(difficulty, id, 2) : `Player ${id + 1}`;
+}
+
+function countCpusByDifficulty(configs) {
+  return configs.reduce((counts, config) => {
+    if ((config.type || "human") !== "cpu") {
+      return counts;
+    }
+    const difficulty = normalizeCpuDifficulty(config.difficulty);
+    counts[difficulty] = (counts[difficulty] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+function formatCpuName(difficulty, index, sameLevelCount = 1) {
+  const suffix = sameLevelCount > 1 ? ` ${alphabetLabel(index)}` : "";
+  return `CPU Lv${formatCpuLevel(difficulty)}${suffix}`;
+}
+
+function formatCpuLevel(difficulty) {
+  const match = String(normalizeCpuDifficulty(difficulty)).match(/^lv0?(\d+)$/);
+  return match ? match[1] : "1";
+}
+
+function alphabetLabel(index) {
+  let value = Math.max(0, Number(index || 0));
+  let label = "";
+  do {
+    label = String.fromCharCode(65 + (value % 26)) + label;
+    value = Math.floor(value / 26) - 1;
+  } while (value >= 0);
+  return label;
 }
 
 function normalizeCpuDifficulty(difficulty) {

@@ -257,7 +257,9 @@ function handleChange(event) {
 
   player[target.dataset.field] = target.value;
   if (target.dataset.field === "type") {
-    player.name = defaultName(index, target.value);
+    if (target.value === "human") {
+      player.name = defaultName(index, target.value);
+    }
   }
   render(currentGame, currentData, currentOptions);
 }
@@ -272,9 +274,10 @@ function handleInput(event) {
 }
 
 function renderSetup(options) {
-  const rows = setupState.players
-    .slice(0, setupState.playerCount)
-    .map((player, index) => renderSetupPlayer(player, index))
+  const visiblePlayers = setupState.players.slice(0, setupState.playerCount);
+  const cpuNames = getSetupCpuNames(visiblePlayers);
+  const rows = visiblePlayers
+    .map((player, index) => renderSetupPlayer(player, index, cpuNames[index]))
     .join("");
 
   return `
@@ -312,14 +315,18 @@ function renderSetup(options) {
   `;
 }
 
-function renderSetupPlayer(player, index) {
+function renderSetupPlayer(player, index, cpuName) {
   const isCpu = player.type === "cpu";
   const difficulty = normalizeSetupDifficulty(player.difficulty);
+  const nameValue = isCpu ? cpuName : player.name;
+  const nameAttrs = isCpu
+    ? 'readonly aria-readonly="true" title="CPU名は強さごとに自動で決まります"'
+    : `data-field="name" data-player-index="${index}" maxlength="16"`;
   return `
     <div class="setup-row">
-      <label class="setup-name">
+      <label class="setup-name ${isCpu ? "is-muted" : ""}">
         <span>プレイヤー${index + 1}</span>
-        <input type="text" value="${escapeAttr(player.name)}" data-field="name" data-player-index="${index}" maxlength="16">
+        <input type="text" value="${escapeAttr(nameValue)}" ${nameAttrs}>
       </label>
       <label>
         <span>種別</span>
@@ -1285,15 +1292,68 @@ function showNotice(message) {
 }
 
 function getPlayerConfigs() {
-  return setupState.players.slice(0, setupState.playerCount).map((player, index) => ({
-    type: player.type,
-    name: player.name || defaultName(index, player.type),
-    difficulty: normalizeSetupDifficulty(player.difficulty),
-  }));
+  return setupState.players.slice(0, setupState.playerCount).map((player, index) => {
+    if (player.type === "cpu") {
+      return {
+        type: "cpu",
+        difficulty: normalizeSetupDifficulty(player.difficulty),
+      };
+    }
+    return {
+      type: "human",
+      name: player.name || defaultName(index, player.type),
+      difficulty: null,
+    };
+  });
 }
 
 function defaultName(index, type) {
   return type === "cpu" ? `CPU ${index + 1}` : `Player ${index + 1}`;
+}
+
+function getSetupCpuNames(players) {
+  const cpuCountsByDifficulty = {};
+  const cpuTotalsByDifficulty = countSetupCpusByDifficulty(players);
+  return players.map((player) => {
+    if (player.type !== "cpu") {
+      return null;
+    }
+    const difficulty = normalizeSetupDifficulty(player.difficulty);
+    const cpuIndex = cpuCountsByDifficulty[difficulty] || 0;
+    cpuCountsByDifficulty[difficulty] = cpuIndex + 1;
+    return formatSetupCpuName(difficulty, cpuIndex, cpuTotalsByDifficulty[difficulty] || 0);
+  });
+}
+
+function countSetupCpusByDifficulty(players) {
+  return players.reduce((counts, player) => {
+    if (player.type !== "cpu") {
+      return counts;
+    }
+    const difficulty = normalizeSetupDifficulty(player.difficulty);
+    counts[difficulty] = (counts[difficulty] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+function formatSetupCpuName(difficulty, index, sameLevelCount = 1) {
+  const suffix = sameLevelCount > 1 ? ` ${alphabetLabel(index)}` : "";
+  return `CPU Lv${formatSetupCpuLevel(difficulty)}${suffix}`;
+}
+
+function formatSetupCpuLevel(difficulty) {
+  const match = String(normalizeSetupDifficulty(difficulty)).match(/^lv0?(\d+)$/);
+  return match ? match[1] : "1";
+}
+
+function alphabetLabel(index) {
+  let value = Math.max(0, Number(index || 0));
+  let label = "";
+  do {
+    label = String.fromCharCode(65 + (value % 26)) + label;
+    value = Math.floor(value / 26) - 1;
+  } while (value >= 0);
+  return label;
 }
 
 function normalizeSetupDifficulty(difficulty) {
