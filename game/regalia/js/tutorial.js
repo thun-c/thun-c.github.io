@@ -14,24 +14,40 @@ const TUTORIAL_STEPS = [
       action: "select-token",
       target: { color: "white" },
       message: "光マナを1つ選びます。",
+      details: [
+        "この兵は光1・雷1が必要です。",
+        "あなたは雷マナを1つ持っています。足りない光マナを取りにいきます。",
+      ],
       advance: "ui",
     },
     {
       action: "confirm-tokens",
       gameAction: "takeTokens",
       message: "選んだマナを取ります。相手の手番はスキップします。",
+      details: [
+        "取った光マナは自分のプレイヤー枠に移ります。",
+        "光1・雷1がそろうので、ギルドの緑の兵をスカウトできるようになります。",
+      ],
       after: skipToHumanAction,
     },
     {
       action: "open-card",
       target: { sourceType: "market", cardId: "tutorial-1-recruit" },
       message: "取ったマナで買える兵を選びます。",
+      details: [
+        "カード下部の条件と、プレイヤー枠のマナが一致しています。",
+        "スカウトできるか迷ったら、まず兵を押して詳細を確認できます。",
+      ],
       advance: "ui",
     },
     {
       action: "buy-card",
       gameAction: "buyCard",
       message: "スカウトして、兵が自分の場に加わる流れを見ます。",
+      details: [
+        "支払ったマナは場に戻ります。",
+        "兵は自分の場に残り、次から同じ色の割引として働きます。",
+      ],
       completeScenario: true,
     },
   ],
@@ -40,24 +56,40 @@ const TUTORIAL_STEPS = [
       action: "open-card",
       target: { sourceType: "market", cardId: "tutorial-2-reserve" },
       message: "予約したい兵を選びます。",
+      details: [
+        "この兵は赤マナが足りず、今はスカウトできません。",
+        "予約するとカードを手元に確保し、全マナを1つ受け取れます。",
+      ],
       advance: "ui",
     },
     {
       action: "reserve-card",
       gameAction: "reserveCard",
       message: "予約して全マナを受け取ります。",
+      details: [
+        "全マナは足りない色の代わりになります。",
+        "ここでは相手の手番を飛ばして、次の自分の手番へ進みます。",
+      ],
       after: prepareScenario2ReservedBuy,
     },
     {
       action: "open-card",
       target: { sourceType: "reserved", cardId: "tutorial-2-reserve" },
       message: "次の手番です。予約した兵を選びます。",
+      details: [
+        "予約した兵はプレイヤー枠の予約欄にあります。",
+        "白マナ1つと全マナ1つで、白1・赤1の条件を満たせます。",
+      ],
       advance: "ui",
     },
     {
       action: "buy-card",
       gameAction: "buyCard",
       message: "全マナを使って予約した兵をスカウトします。",
+      details: [
+        "予約は、欲しい兵を確保しながら次の購入準備をする行動です。",
+        "全マナをいつ使うかが、中盤以降の計画に効いてきます。",
+      ],
       completeScenario: true,
     },
   ],
@@ -66,35 +98,59 @@ const TUTORIAL_STEPS = [
       action: "open-card",
       target: { sourceType: "market", cardId: "tutorial-3-trigger" },
       message: "この兵をスカウトすると紋章条件を満たします。",
+      details: [
+        "場の紋章は白の兵2枚を条件にしています。",
+        "あなたはすでに白の兵を1枚持っているので、もう1枚で条件達成です。",
+      ],
       advance: "ui",
     },
     {
       action: "buy-card",
       gameAction: "buyCard",
       message: "兵をスカウトして、紋章を獲得できる状態にします。",
+      details: [
+        "兵は購入後も残るので、紋章条件の枚数として数えます。",
+        "購入後、条件を満たした紋章を獲得する選択に進みます。",
+      ],
     },
     {
       action: "claim-noble",
       gameAction: "claimNoble",
       target: { nobleId: "tutorial-3-noble" },
       message: "条件を満たした紋章を獲得します。",
+      details: [
+        "この紋章は双醒です。",
+        "獲得すると覚醒を2個得て、次の大きなスカウトを助けます。",
+      ],
     },
     {
       action: "dismiss-cutin",
       gameAction: "clearCutIn",
       message: "双醒の覚醒効果を確認して閉じます。",
+      details: [
+        "覚醒はカード購入時の不足コストとして使えます。",
+        "次の手番では、足りない赤2を覚醒2個で補います。",
+      ],
       after: prepareScenario3AwakeningBuy,
     },
     {
       action: "open-card",
       target: { sourceType: "market", cardId: "tutorial-3-lv3" },
       message: "覚醒を不足コストとして使えるLv3兵を選びます。",
+      details: [
+        "このLv3兵は赤2が足りません。",
+        "通常なら買えませんが、覚醒2個で不足分を補えます。",
+      ],
       advance: "ui",
     },
     {
       action: "buy-card",
       gameAction: "buyCard",
       message: "覚醒を消費してLv3兵をスカウトします。",
+      details: [
+        "覚醒はマナではないので、10枚上限に数えません。",
+        "紋章ルートは、覚醒で高レベル兵へ届きやすくなるのが強みです。",
+      ],
       completeTutorial: true,
     },
   ],
@@ -174,6 +230,7 @@ export function getTutorialView(tutorial) {
     scenarioCount: SCENARIO_COUNT,
     title: SCENARIO_TITLES[scenarioIndex],
     message: getTutorialMessage(tutorial, step),
+    details: getTutorialDetails(step),
     step,
     scenarioComplete: tutorial.scenarioComplete,
     done: tutorial.done,
@@ -255,12 +312,19 @@ function getTutorialStep(tutorial) {
     return {
       action: "tutorial-exit",
       message: "チュートリアルは完了です。通常の新規ゲームへ戻れます。",
+      details: [
+        "マナ取得、予約、紋章覚醒の基本操作を確認しました。",
+        "通常ゲームでは相手も動くので、どの準備を優先するかが大切です。",
+      ],
     };
   }
   if (tutorial.scenarioComplete) {
     return {
       action: "tutorial-next",
       message: "この状況は完了です。次の状況へ進みます。",
+      details: [
+        "ここでは学びやすいように、次の固定盤面へ切り替えます。",
+      ],
     };
   }
   return TUTORIAL_STEPS[tutorial.scenarioIndex]?.[tutorial.stepIndex] || null;
@@ -274,6 +338,10 @@ function getTutorialMessage(tutorial, step) {
     return step.message;
   }
   return step.message;
+}
+
+function getTutorialDetails(step) {
+  return Array.isArray(step?.details) ? step.details : [];
 }
 
 function actionToTarget(action) {

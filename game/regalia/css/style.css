@@ -257,7 +257,7 @@ button[aria-disabled="true"] {
   max-width: 1500px;
   margin: 0 auto 12px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
   border: 1px solid rgba(255, 230, 153, 0.46);
@@ -284,6 +284,21 @@ button[aria-disabled="true"] {
   font-size: 14px;
   font-weight: 800;
   line-height: 1.45;
+}
+
+.tutorial-detail-list {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding-left: 1.1em;
+  color: #f9e7bd;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.tutorial-detail-list li {
+  margin: 0;
 }
 
 .tutorial-actions {

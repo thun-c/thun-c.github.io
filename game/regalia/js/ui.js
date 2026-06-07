@@ -491,12 +491,24 @@ function renderTutorialPanel(tutorial) {
         <p class="eyebrow">Tutorial ${tutorial.scenarioNumber}/${tutorial.scenarioCount}</p>
         <h2>${escapeHtml(tutorial.title)}</h2>
         <p>${escapeHtml(tutorial.message)}</p>
+        ${renderTutorialDetails(tutorial.details)}
       </div>
       <div class="tutorial-actions">
         ${primaryButton}
         <button class="ghost-button" type="button" data-action="tutorial-exit">チュートリアル終了</button>
       </div>
     </section>
+  `;
+}
+
+function renderTutorialDetails(details = []) {
+  if (!details.length) {
+    return "";
+  }
+  return `
+    <ul class="tutorial-detail-list">
+      ${details.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+    </ul>
   `;
 }
 
