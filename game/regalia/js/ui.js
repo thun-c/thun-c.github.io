@@ -305,6 +305,7 @@ function renderSetup(options) {
       <div class="setup-panel">
         <p class="eyebrow">Regalia of the Five Lights</p>
         <h1>五燈のレガリア</h1>
+        <img class="setup-share-image" src="./assets/share/regalia-card.webp" alt="" loading="eager" decoding="async">
         <div class="setup-controls">
           <div class="field-group">
             <span class="field-label">人数</span>

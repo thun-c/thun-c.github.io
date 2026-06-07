@@ -90,6 +90,17 @@ button[aria-disabled="true"] {
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.72);
 }
 
+.setup-share-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  margin-top: 16px;
+  border: 1px solid rgba(255, 239, 194, 0.24);
+  border-radius: 8px;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+  object-fit: cover;
+}
+
 .eyebrow {
   margin: 0 0 6px;
   color: var(--accent);
@@ -1836,6 +1847,10 @@ button.noble-tile.is-claimable {
   .setup-panel,
   .panel {
     padding: 12px;
+  }
+
+  .setup-share-image {
+    margin-top: 12px;
   }
 
   .setup-row {
