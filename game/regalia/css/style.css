@@ -253,6 +253,57 @@ button[aria-disabled="true"] {
   justify-content: flex-end;
 }
 
+.tutorial-panel {
+  max-width: 1500px;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid rgba(255, 230, 153, 0.46);
+  border-radius: 8px;
+  background: rgba(11, 16, 20, 0.82);
+  box-shadow: var(--glass-shadow);
+  color: var(--glass-ink);
+  padding: 14px;
+}
+
+.tutorial-panel h2,
+.tutorial-panel p {
+  margin: 0;
+}
+
+.tutorial-panel h2 {
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.tutorial-panel p {
+  margin-top: 5px;
+  color: #fff4d4;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.tutorial-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+[data-tutorial-focus="true"] {
+  position: relative;
+  z-index: 40;
+  outline: 3px solid #ffe17d;
+  outline-offset: 4px;
+  box-shadow:
+    0 0 0 7px rgba(255, 225, 125, 0.22),
+    0 0 28px rgba(255, 212, 81, 0.54);
+}
+
 .board-grid {
   display: grid;
   grid-template-columns: minmax(280px, 0.7fr) minmax(520px, 1.65fr) minmax(430px, 1.2fr);
@@ -1835,13 +1886,22 @@ button.noble-tile.is-claimable {
   }
 
   .topbar,
-  .game-over-banner {
+  .game-over-banner,
+  .tutorial-panel {
     align-items: stretch;
     flex-direction: column;
   }
 
   .topbar-status {
     justify-content: space-between;
+  }
+
+  .tutorial-actions {
+    justify-content: stretch;
+  }
+
+  .tutorial-actions button {
+    flex: 1;
   }
 
   .setup-panel,

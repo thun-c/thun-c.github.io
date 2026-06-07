@@ -20,6 +20,11 @@ import {
   normalizeTokens,
   totalTokens,
 } from "./game.js";
+import {
+  doesTutorialStepMatch,
+  getTutorialBlockedMessage,
+  isTutorialActionAllowed,
+} from "./tutorial.js";
 import { RULE_PANEL } from "../rules/quick-reference.js";
 
 let root = null;
@@ -93,6 +98,12 @@ function handleClick(event) {
     return;
   }
 
+  const tutorialTarget = tutorialTargetFromElement(target);
+  if (!isTutorialActionAllowed(currentOptions.tutorial, action, tutorialTarget)) {
+    showNotice(getTutorialBlockedMessage(currentOptions.tutorial));
+    return;
+  }
+
   if (action === "set-player-count") {
     setupState.playerCount = Number(target.dataset.count);
     render(currentGame, currentData, currentOptions);
@@ -102,6 +113,12 @@ function handleClick(event) {
   if (action === "start-game") {
     resetTransientState();
     handlers.onStartGame(getPlayerConfigs());
+    return;
+  }
+
+  if (action === "start-tutorial") {
+    resetTransientState();
+    handlers.onStartTutorial();
     return;
   }
 
@@ -132,6 +149,16 @@ function handleClick(event) {
     return;
   }
 
+  if (action === "tutorial-next") {
+    handlers.onTutorialNext();
+    return;
+  }
+
+  if (action === "tutorial-exit") {
+    handlers.onTutorialExit();
+    return;
+  }
+
   if (action === "dismiss-cutin" || action === "dismiss-awakening") {
     applyAndReset({ type: "clearCutIn" });
     return;
@@ -143,6 +170,7 @@ function handleClick(event) {
 
   if (action === "select-token") {
     addSelectedToken(target.dataset.color);
+    completeTutorialUiAction(action, tutorialTarget);
     return;
   }
 
@@ -187,6 +215,7 @@ function handleClick(event) {
 
   if (action === "open-card") {
     openCardModal(target);
+    completeTutorialUiAction(action, tutorialTarget);
     return;
   }
 
@@ -324,6 +353,7 @@ function renderSetup(options) {
           <div class="player-configs">${rows}</div>
           <div class="setup-actions">
             <button class="primary-button" type="button" data-action="start-game">開始</button>
+            <button class="ghost-button" type="button" data-action="start-tutorial">チュートリアル</button>
             ${
               options.hasSave
                 ? '<button class="ghost-button" type="button" data-action="continue-game">続きから</button>'
@@ -373,9 +403,10 @@ function renderGame(game, data, options) {
   const player = getCurrentPlayer(game);
   const winners = game.winnerIds.map((id) => game.players[id]).filter(Boolean);
   const isCpuTurn = player.type === "cpu" && game.phase !== "gameOver";
+  const tutorial = options.tutorial;
 
   return `
-    <div class="game-shell ${isCpuTurn ? "is-cpu-turn" : ""}">
+    <div class="game-shell ${isCpuTurn ? "is-cpu-turn" : ""} ${tutorial?.active ? "is-tutorial" : ""}">
       <header class="topbar">
         <div>
           <p class="eyebrow">Round ${game.round}</p>
@@ -386,6 +417,7 @@ function renderGame(game, data, options) {
           <button class="ghost-button topbar-button" type="button" data-action="share-x-default">Xで共有</button>
         </div>
       </header>
+      ${renderTutorialPanel(tutorial)}
       ${renderGameOver(game, winners)}
       ${renderNobleChoiceBanner(game)}
       <main class="board-grid">
@@ -444,6 +476,30 @@ function renderGame(game, data, options) {
   `;
 }
 
+function renderTutorialPanel(tutorial) {
+  if (!tutorial?.active) {
+    return "";
+  }
+  const primaryButton = tutorial.done
+    ? `<button class="primary-button" type="button" data-action="tutorial-exit" ${tutorialFocusAttrs("tutorial-exit")}>通常の新規ゲームへ</button>`
+    : tutorial.scenarioComplete
+    ? `<button class="primary-button" type="button" data-action="tutorial-next" ${tutorialFocusAttrs("tutorial-next")}>次の状況へ</button>`
+    : "";
+  return `
+    <section class="tutorial-panel">
+      <div>
+        <p class="eyebrow">Tutorial ${tutorial.scenarioNumber}/${tutorial.scenarioCount}</p>
+        <h2>${escapeHtml(tutorial.title)}</h2>
+        <p>${escapeHtml(tutorial.message)}</p>
+      </div>
+      <div class="tutorial-actions">
+        ${primaryButton}
+        <button class="ghost-button" type="button" data-action="tutorial-exit">チュートリアル終了</button>
+      </div>
+    </section>
+  `;
+}
+
 function renderCutIn(game) {
   const cutIn = game.cutIn || game.awakeningCutIn;
   if (!cutIn) {
@@ -489,12 +545,12 @@ function renderCutIn(game) {
               : manualDismiss
               ? `<div class="awakening-cutin-actions">
                   <p>${manualPrompt}</p>
-                  <button class="awakening-cutin-dismiss" type="button" data-action="dismiss-cutin">閉じる</button>
+                  <button class="awakening-cutin-dismiss" type="button" data-action="dismiss-cutin" ${tutorialFocusAttrs("dismiss-cutin")}>閉じる</button>
                 </div>`
               : ""
           }
         </div>
-        ${isVictory ? "" : `<button class="awakening-cutin-close" type="button" data-action="dismiss-cutin" title="閉じる">×</button>`}
+        ${isVictory ? "" : `<button class="awakening-cutin-close" type="button" data-action="dismiss-cutin" title="閉じる" ${tutorialFocusAttrs("dismiss-cutin")}>×</button>`}
       </section>
     </div>
   `;
@@ -621,7 +677,7 @@ function renderNoble(game, noble) {
   const canClaim = isPending && getCurrentPlayer(game).type === "human" && !currentOptions.busy;
   const tag = canClaim ? "button" : "div";
   const attrs = canClaim
-    ? `type="button" data-action="claim-noble" data-noble-id="${escapeAttr(noble.id)}"`
+    ? `type="button" data-action="claim-noble" data-noble-id="${escapeAttr(noble.id)}" ${tutorialFocusAttrs("claim-noble", { nobleId: noble.id })}`
     : "";
   const art = getNobleArtData(noble);
   const displayName = getNobleDisplayName(noble);
@@ -659,8 +715,9 @@ function renderCardButton(game, card, source) {
   const player = getCurrentPlayer(game);
   const buyable = canUseAction(game) && canBuyCard(player, card);
   const sourceAttrs = sourceToAttrs(source);
+  const focusAttrs = tutorialFocusAttrs("open-card", { sourceType: source.type, cardId: source.cardId });
   return `
-    <button class="dev-card card-${card.bonus} level-${card.level} ${buyable ? "is-buyable" : ""}" type="button" data-action="open-card" ${sourceAttrs} ${cardArtAttrs(card)} ${canUseAction(game) ? "" : "disabled"}>
+    <button class="dev-card card-${card.bonus} level-${card.level} ${buyable ? "is-buyable" : ""}" type="button" data-action="open-card" ${sourceAttrs} ${cardArtAttrs(card)} ${focusAttrs} ${canUseAction(game) ? "" : "disabled"}>
       ${renderCardFace(card)}
     </button>
   `;
@@ -694,7 +751,7 @@ function renderBank(game) {
       ${ALL_TOKEN_COLORS.map((color) => {
         const tokenReason = getTokenButtonDisabledReason(game, color, isAction);
         return `
-          <button class="token-button gem-${color}" type="button" data-action="select-token" data-color="${color}" aria-label="${COLOR_LABELS[color]} ${game.bank[color]}枚" ${disabledAttrs(tokenReason)}>
+          <button class="token-button gem-${color}" type="button" data-action="select-token" data-color="${color}" aria-label="${COLOR_LABELS[color]} ${game.bank[color]}枚" ${tutorialFocusAttrs("select-token", { color })} ${disabledAttrs(tokenReason)}>
             <strong>${game.bank[color]}</strong>
           </button>
         `;
@@ -706,7 +763,7 @@ function renderBank(game) {
         ${renderSelectedTokens(selectedTokens, "remove-token")}
       </div>
       <div class="action-buttons">
-        <button class="primary-button" type="button" data-action="confirm-tokens" ${disabledAttrs(confirmReason)}>取る</button>
+        <button class="primary-button" type="button" data-action="confirm-tokens" ${tutorialFocusAttrs("confirm-tokens")} ${disabledAttrs(confirmReason)}>取る</button>
         <button class="ghost-button" type="button" data-action="cancel-tokens" ${selectedCount > 0 ? "" : "disabled"}>取消</button>
         ${
           passAction
@@ -961,10 +1018,10 @@ function renderModal(game) {
         <div class="modal-actions">
           ${
             card
-              ? `<button class="primary-button" type="button" data-action="buy-card" ${canBuy ? "" : "disabled"}>スカウト</button>`
+              ? `<button class="primary-button" type="button" data-action="buy-card" ${tutorialFocusAttrs("buy-card")} ${canBuy ? "" : "disabled"}>スカウト</button>`
               : ""
           }
-          <button class="ghost-button" type="button" data-action="reserve-card" ${canReserve ? "" : "disabled"}>予約</button>
+          <button class="ghost-button" type="button" data-action="reserve-card" ${tutorialFocusAttrs("reserve-card")} ${canReserve ? "" : "disabled"}>予約</button>
         </div>
       </div>
     </div>
@@ -1474,6 +1531,29 @@ function disabledAttrs(reason) {
     return "";
   }
   return `aria-disabled="true" data-disabled-reason="${escapeAttr(reason)}"`;
+}
+
+function tutorialFocusAttrs(action, target = {}) {
+  return doesTutorialStepMatch(currentOptions.tutorial?.step, action, target)
+    ? 'data-tutorial-focus="true"'
+    : "";
+}
+
+function tutorialTargetFromElement(target) {
+  const dataset = target?.dataset || {};
+  return {
+    color: dataset.color || "",
+    sourceType: dataset.sourceType || "",
+    cardId: dataset.cardId || "",
+    nobleId: dataset.nobleId || "",
+  };
+}
+
+function completeTutorialUiAction(action, target) {
+  if (!currentOptions.tutorial?.active) {
+    return;
+  }
+  handlers.onTutorialUiAction({ action, target });
 }
 
 function scheduleCutInDismiss(game) {

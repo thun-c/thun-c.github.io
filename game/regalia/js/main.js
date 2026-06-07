@@ -1,5 +1,13 @@
 import { chooseCpuAction } from "./ai.js";
 import { applyAction, createNewGame, getCurrentPlayer, normalizeGameData, restoreGame } from "./game.js";
+import {
+  advanceTutorialAfterGameAction,
+  advanceTutorialAfterUiAction,
+  advanceTutorialScenario,
+  createTutorialGame,
+  createTutorialSession,
+  getTutorialView,
+} from "./tutorial.js";
 import { initUI, render, resetTransientState } from "./ui.js";
 
 const SAVE_KEY = "regaliaLocalGame.current";
@@ -8,6 +16,7 @@ let game = null;
 let gameData = null;
 let cpuTimer = null;
 let busy = false;
+let tutorial = null;
 
 window.addEventListener("DOMContentLoaded", boot);
 
@@ -17,6 +26,10 @@ async function boot() {
     onContinueGame: continueGame,
     onApplyAction: handleApplyAction,
     onNewGame: newGame,
+    onStartTutorial: startTutorial,
+    onTutorialUiAction: handleTutorialUiAction,
+    onTutorialNext: nextTutorialScenario,
+    onTutorialExit: exitTutorial,
   });
 
   render(null, null, { hasSave: hasSave(), busy: false });
@@ -109,6 +122,7 @@ function startGame(playerConfigs) {
   }
   clearCpuTimer();
   resetTransientState();
+  tutorial = null;
   game = createNewGame(playerConfigs, gameData);
   saveGame();
   renderNow();
@@ -126,6 +140,7 @@ function continueGame() {
 
   try {
     game = restoreGame(JSON.parse(saved));
+    tutorial = null;
     resetTransientState();
     renderNow();
     continueCpuTurnIfNeeded();
@@ -141,14 +156,58 @@ function handleApplyAction(action) {
     return;
   }
   game = applyAction(game, action);
-  saveGame();
+  if (tutorial?.active) {
+    advanceTutorialAfterGameAction(tutorial, game, action);
+  } else {
+    saveGame();
+  }
   renderNow();
   continueCpuTurnIfNeeded();
+}
+
+function startTutorial() {
+  if (!gameData) {
+    return;
+  }
+  clearCpuTimer();
+  busy = false;
+  resetTransientState();
+  tutorial = createTutorialSession();
+  game = createTutorialGame(gameData, tutorial.scenarioIndex);
+  renderNow();
+}
+
+function handleTutorialUiAction(event) {
+  if (!tutorial?.active) {
+    return;
+  }
+  advanceTutorialAfterUiAction(tutorial, event.action, event.target || {});
+  renderNow();
+}
+
+function nextTutorialScenario() {
+  if (!tutorial?.active) {
+    return;
+  }
+  tutorial = advanceTutorialScenario(tutorial);
+  game = createTutorialGame(gameData, tutorial.scenarioIndex);
+  resetTransientState();
+  renderNow();
+}
+
+function exitTutorial() {
+  clearCpuTimer();
+  busy = false;
+  tutorial = null;
+  game = null;
+  resetTransientState();
+  renderNow();
 }
 
 function newGame() {
   clearCpuTimer();
   busy = false;
+  tutorial = null;
   game = null;
   localStorage.removeItem(SAVE_KEY);
   renderNow();
@@ -156,6 +215,11 @@ function newGame() {
 
 function continueCpuTurnIfNeeded() {
   clearCpuTimer();
+  if (tutorial?.active) {
+    busy = false;
+    renderNow();
+    return;
+  }
   if (!game || game.phase === "gameOver") {
     busy = false;
     renderNow();
@@ -206,7 +270,7 @@ function clearCpuTimer() {
 }
 
 function renderNow() {
-  render(game, gameData, { hasSave: hasSave(), busy });
+  render(game, gameData, { hasSave: hasSave(), busy, tutorial: getTutorialView(tutorial) });
 }
 
 function saveGame() {
