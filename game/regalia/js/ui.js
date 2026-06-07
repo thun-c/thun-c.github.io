@@ -139,6 +139,11 @@ function handleClick(event) {
   }
 
   if (action === "new-game") {
+    if (currentOptions.tutorial?.active) {
+      resetTransientState();
+      handlers.onTutorialExit();
+      return;
+    }
     if (currentGame && currentGame.phase !== "gameOver") {
       modal = { type: "confirmNewGame" };
       render(currentGame, currentData, currentOptions);
@@ -551,7 +556,7 @@ function renderCutIn(game) {
             isVictory
               ? `<div class="awakening-cutin-actions">
                   <p>結果を確認して新しいゲームを始められます</p>
-                  <button class="awakening-cutin-dismiss" type="button" data-action="new-game">新規ゲーム</button>
+                  <button class="awakening-cutin-dismiss" type="button" data-action="new-game" ${tutorialFocusAttrs("new-game")}>新規ゲーム</button>
                   <button class="awakening-cutin-dismiss awakening-cutin-share" type="button" data-action="share-x">Xで共有</button>
                 </div>`
               : manualDismiss

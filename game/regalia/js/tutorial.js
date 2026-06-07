@@ -1,12 +1,13 @@
 import {
   createNewGame,
   emptyTokens,
+  passTurn,
   refreshScores,
 } from "./game.js";
 
 const HUMAN_ID = 0;
 const CPU_ID = 1;
-const SCENARIO_COUNT = 3;
+const SCENARIO_COUNT = 5;
 
 const TUTORIAL_STEPS = [
   [
@@ -54,7 +55,29 @@ const TUTORIAL_STEPS = [
   [
     {
       action: "open-card",
-      target: { sourceType: "market", cardId: "tutorial-2-reserve" },
+      target: { sourceType: "market", cardId: "tutorial-2-discount" },
+      message: "兵の割引とマナで買える兵を選びます。",
+      details: [
+        "この兵は光1・雷1が必要です。",
+        "あなたの白い兵が光1ぶんを肩代わりし、手元の雷マナ1個だけを支払います。",
+      ],
+      advance: "ui",
+    },
+    {
+      action: "buy-card",
+      gameAction: "buyCard",
+      message: "兵は消費せず、マナだけを支払ってスカウトします。",
+      details: [
+        "支払い表示は雷1だけになります。",
+        "スカウト後も白い兵はプレイヤー枠に残り、次のスカウトでも割引になります。",
+      ],
+      completeScenario: true,
+    },
+  ],
+  [
+    {
+      action: "open-card",
+      target: { sourceType: "market", cardId: "tutorial-3-reserve" },
       message: "予約したい兵を選びます。",
       details: [
         "この兵は赤マナが足りず、今はスカウトできません。",
@@ -70,11 +93,11 @@ const TUTORIAL_STEPS = [
         "全マナは足りない色の代わりになります。",
         "ここでは相手の手番を飛ばして、次の自分の手番へ進みます。",
       ],
-      after: prepareScenario2ReservedBuy,
+      after: prepareScenario3ReservedBuy,
     },
     {
       action: "open-card",
-      target: { sourceType: "reserved", cardId: "tutorial-2-reserve" },
+      target: { sourceType: "reserved", cardId: "tutorial-3-reserve" },
       message: "次の手番です。予約した兵を選びます。",
       details: [
         "予約した兵はプレイヤー枠の予約欄にあります。",
@@ -96,7 +119,7 @@ const TUTORIAL_STEPS = [
   [
     {
       action: "open-card",
-      target: { sourceType: "market", cardId: "tutorial-3-trigger" },
+      target: { sourceType: "market", cardId: "tutorial-4-trigger" },
       message: "この兵をスカウトすると紋章条件を満たします。",
       details: [
         "場の紋章は白の兵2枚を条件にしています。",
@@ -116,7 +139,7 @@ const TUTORIAL_STEPS = [
     {
       action: "claim-noble",
       gameAction: "claimNoble",
-      target: { nobleId: "tutorial-3-noble" },
+      target: { nobleId: "tutorial-4-noble" },
       message: "条件を満たした紋章を獲得します。",
       details: [
         "この紋章は双醒です。",
@@ -131,11 +154,11 @@ const TUTORIAL_STEPS = [
         "覚醒はカード購入時の不足コストとして使えます。",
         "次の手番では、足りない赤2を覚醒2個で補います。",
       ],
-      after: prepareScenario3AwakeningBuy,
+      after: prepareScenario4AwakeningBuy,
     },
     {
       action: "open-card",
-      target: { sourceType: "market", cardId: "tutorial-3-lv3" },
+      target: { sourceType: "market", cardId: "tutorial-4-lv3" },
       message: "覚醒を不足コストとして使えるLv3兵を選びます。",
       details: [
         "このLv3兵は赤2が足りません。",
@@ -151,15 +174,93 @@ const TUTORIAL_STEPS = [
         "覚醒はマナではないので、10枚上限に数えません。",
         "紋章ルートは、覚醒で高レベル兵へ届きやすくなるのが強みです。",
       ],
-      completeTutorial: true,
+      completeScenario: true,
+    },
+  ],
+  [
+    {
+      action: "open-card",
+      target: { sourceType: "market", cardId: "tutorial-5-finish" },
+      message: "最後の得点つき兵を選び、13点到達を確認します。",
+      details: [
+        "ゲームの目的は、得点つき兵や紋章で点数を集めて勝つことです。",
+        "2人戦で紋章を持っていない場合は、13点で終了条件を発生させられます。",
+        "この盤面では終了条件に集中するため、支払いなしで買える兵を置いています。",
+      ],
+      advance: "ui",
+    },
+    {
+      action: "buy-card",
+      gameAction: "buyCard",
+      message: "1点の兵をスカウトして、12点から13点へ到達します。",
+      details: [
+        "終了条件に届くと、すぐ勝ちではなく、このラウンドで終了します。",
+        "紋章を1枚以上持っている場合は、通常どおり15点が終了条件です。",
+      ],
+    },
+    {
+      action: "dismiss-cutin",
+      gameAction: "clearCutIn",
+      message: "終了条件到達の演出を確認して閉じます。",
+      details: [
+        "あなたが13点に到達したので、このラウンドで終了します。",
+        "ここではCPUの最終手番をチュートリアル用にスキップし、勝敗確認へ進みます。",
+      ],
+      after: finishTutorialFinalRound,
+    },
+    {
+      action: "new-game",
+      message: "優勝演出を確認したら、新規ゲームへ戻ります。",
+      details: [
+        "勝者は最終点数で決まります。",
+        "同点なら、購入した兵が少ないプレイヤーが勝ちます。",
+      ],
     },
   ],
 ];
 
 const SCENARIO_TITLES = [
   "状況1: マナを取って兵をスカウト",
-  "状況2: 予約で全マナを得てスカウト",
-  "状況3: 紋章覚醒でLv3兵をスカウト",
+  "状況2: 兵割引とマナでスカウト",
+  "状況3: 予約で全マナを得てスカウト",
+  "状況4: 紋章覚醒でLv3兵をスカウト",
+  "状況5: 点数を集めて終了条件へ",
+];
+
+const SCENARIO_COMPLETIONS = [
+  {
+    message: "マナを取って兵をスカウトできました。",
+    details: [
+      "マナは支払いで場に戻り、兵は自分の場に残ります。",
+    ],
+  },
+  {
+    message: "兵割引とマナを合算してスカウトできました。",
+    details: [
+      "雷マナは消費されましたが、白い兵は残っています。",
+      "兵は使い捨てではなく、ずっと割引として働きます。",
+    ],
+  },
+  {
+    message: "予約と全マナを使ったスカウトを確認しました。",
+    details: [
+      "予約は、欲しい兵を確保しながら不足色を補う準備になります。",
+    ],
+  },
+  {
+    message: "紋章覚醒で高レベル兵へ届く流れを確認しました。",
+    details: [
+      "紋章を取ると、覚醒効果で通常より大きなスカウトを狙えます。",
+    ],
+  },
+];
+
+const SCENARIO_SETUPS = [
+  setupScenario1,
+  setupScenario2,
+  setupScenario3,
+  setupScenario4,
+  setupScenario5,
 ];
 
 export function createTutorialSession() {
@@ -200,13 +301,8 @@ export function createTutorialGame(data, scenarioIndex = 0) {
   game.bank = tokens();
   resetTutorialPlayers(game);
 
-  if (scenarioIndex === 0) {
-    setupScenario1(game);
-  } else if (scenarioIndex === 1) {
-    setupScenario2(game);
-  } else {
-    setupScenario3(game);
-  }
+  const setupScenario = SCENARIO_SETUPS[scenarioIndex] || setupScenario1;
+  setupScenario(game);
 
   game.log = [
     logEntry(`${SCENARIO_TITLES[scenarioIndex]}を開始しました。`),
@@ -255,6 +351,9 @@ export function doesTutorialStepMatch(step, action, target = {}) {
 }
 
 export function getTutorialBlockedMessage(tutorialView) {
+  if (tutorialView?.step?.action === "new-game") {
+    return "優勝演出の新規ゲームを押してください。";
+  }
   return tutorialView?.step?.action === "tutorial-next"
     ? "次の状況へ進んでください。"
     : "光っている場所を押してください。";
@@ -313,16 +412,17 @@ function getTutorialStep(tutorial) {
       action: "tutorial-exit",
       message: "チュートリアルは完了です。通常の新規ゲームへ戻れます。",
       details: [
-        "マナ取得、予約、紋章覚醒の基本操作を確認しました。",
+        "マナ取得、兵割引、予約、紋章覚醒、終了条件を確認しました。",
         "通常ゲームでは相手も動くので、どの準備を優先するかが大切です。",
       ],
     };
   }
   if (tutorial.scenarioComplete) {
+    const completion = SCENARIO_COMPLETIONS[tutorial.scenarioIndex] || {};
     return {
       action: "tutorial-next",
-      message: "この状況は完了です。次の状況へ進みます。",
-      details: [
+      message: completion.message || "この状況は完了です。次の状況へ進みます。",
+      details: completion.details || [
         "ここでは学びやすいように、次の固定盤面へ切り替えます。",
       ],
     };
@@ -368,41 +468,72 @@ function setupScenario1(game) {
 
 function setupScenario2(game) {
   const player = game.players[HUMAN_ID];
-  player.tokens = tokens({ white: 1 });
+  player.tokens = tokens({ blue: 1 });
+  player.cards = [
+    card("tutorial-2-bonus", 1, 0, "white", {}),
+  ];
   game.bank = tokens({ gold: 5 });
   game.market.level1 = [
-    card("tutorial-2-reserve", 1, 0, "blue", { white: 1, red: 1 }),
+    card("tutorial-2-discount", 1, 0, "red", { white: 1, blue: 1 }),
   ];
 }
 
 function setupScenario3(game) {
   const player = game.players[HUMAN_ID];
+  player.tokens = tokens({ white: 1 });
+  game.bank = tokens({ gold: 5 });
+  game.market.level1 = [
+    card("tutorial-3-reserve", 1, 0, "blue", { white: 1, red: 1 }),
+  ];
+}
+
+function setupScenario4(game) {
+  const player = game.players[HUMAN_ID];
   player.tokens = tokens({ green: 1 });
   player.cards = [
-    card("tutorial-3-base", 1, 0, "white", {}),
+    card("tutorial-4-base", 1, 0, "white", {}),
   ];
   game.bank = tokens({ gold: 5 });
   game.market.level1 = [
-    card("tutorial-3-trigger", 1, 0, "white", { green: 1 }),
+    card("tutorial-4-trigger", 1, 0, "white", { green: 1 }),
   ];
   game.market.level3 = [
-    card("tutorial-3-lv3", 3, 3, "black", { red: 2 }),
+    card("tutorial-4-lv3", 3, 3, "black", { red: 2 }),
   ];
   game.nobles = [
-    noble("tutorial-3-noble", 3, { white: 2 }, "dual"),
+    noble("tutorial-4-noble", 3, { white: 2 }, "dual"),
   ];
 }
 
-function prepareScenario2ReservedBuy(game) {
-  skipToHumanAction(game);
-}
-
-function prepareScenario3AwakeningBuy(game) {
-  skipToHumanAction(game);
-  game.market.level3 = [
-    card("tutorial-3-lv3", 3, 3, "black", { red: 2 }),
+function setupScenario5(game) {
+  const player = game.players[HUMAN_ID];
+  player.cards = [
+    card("tutorial-5-score-a", 2, 3, "white", {}),
+    card("tutorial-5-score-b", 2, 3, "blue", {}),
+    card("tutorial-5-score-c", 2, 3, "green", {}),
+    card("tutorial-5-score-d", 2, 3, "black", {}),
+  ];
+  game.bank = tokens();
+  game.market.level1 = [
+    card("tutorial-5-finish", 1, 1, "red", {}),
   ];
   refreshScores(game);
+}
+
+function prepareScenario3ReservedBuy(game) {
+  skipToHumanAction(game);
+}
+
+function prepareScenario4AwakeningBuy(game) {
+  skipToHumanAction(game);
+  game.market.level3 = [
+    card("tutorial-4-lv3", 3, 3, "black", { red: 2 }),
+  ];
+  refreshScores(game);
+}
+
+function finishTutorialFinalRound(game) {
+  passTurn(game);
 }
 
 function skipToHumanAction(game) {
