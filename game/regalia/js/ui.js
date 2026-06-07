@@ -63,20 +63,20 @@ export function render(game, data, options = {}) {
   }
 
   if (!game) {
-    clearAwakeningCutInTimer();
+    clearCutInTimer();
     root.innerHTML = renderSetup(options);
     return;
   }
 
   root.innerHTML = renderGame(game, data, options);
-  scheduleAwakeningCutInDismiss(game);
+  scheduleCutInDismiss(game);
 }
 
 export function resetTransientState() {
   modal = null;
   selectedTokens = emptyTokens();
   selectedDiscard = emptyTokens();
-  clearAwakeningCutInTimer();
+  clearCutInTimer();
 }
 
 function handleClick(event) {
@@ -122,8 +122,8 @@ function handleClick(event) {
     return;
   }
 
-  if (action === "dismiss-awakening") {
-    applyAndReset({ type: "clearAwakeningCutIn" });
+  if (action === "dismiss-cutin" || action === "dismiss-awakening") {
+    applyAndReset({ type: "clearCutIn" });
     return;
   }
 
@@ -427,35 +427,38 @@ function renderGame(game, data, options) {
       </main>
       ${renderModal(game)}
       ${options.busy ? '<div class="busy-layer">CPU思考中...</div>' : ""}
-      ${renderAwakeningCutIn(game)}
+      ${renderCutIn(game)}
     </div>
   `;
 }
 
-function renderAwakeningCutIn(game) {
-  const cutIn = game.awakeningCutIn;
+function renderCutIn(game) {
+  const cutIn = game.cutIn || game.awakeningCutIn;
   if (!cutIn) {
     return "";
   }
-  const noble = cutIn.noble || {};
-  const art = getNobleArtData(noble);
+  const kind = cutIn.kind || "awakening";
+  const source = getCutInSource(cutIn);
+  const art = getCutInArtData(source);
   const artAttrs = art
     ? `style="--cutin-art-position: ${escapeAttr(art.position)};"`
     : "";
   const artImage = art
     ? `<img class="awakening-cutin-art" src="${escapeAttr(art.url)}" alt="" loading="eager" decoding="async">`
     : "";
-  const nobleName = getNobleDisplayName(noble);
-  const title = `${cutIn.effectLabel || "覚醒"} 覚醒`;
-  const nobleText = nobleName ? `${nobleName} / ${noble.points || 0}点` : `${noble.points || 0}点の紋章`;
-  const manualDismiss = cutIn.autoDismiss === false;
+  const title = cutIn.title || getDefaultCutInTitle(cutIn);
+  const sourceText = getCutInSourceLabel(source);
+  const isVictory = kind === "victory";
+  const manualDismiss = cutIn.autoDismiss === false || isVictory;
   const roleAttrs = manualDismiss
     ? `role="dialog" aria-modal="true" aria-label="${escapeAttr(title)}"`
     : `role="status" aria-live="polite" aria-label="${escapeAttr(title)}"`;
-  const backdropClass = `awakening-cutin-backdrop${manualDismiss ? " is-manual" : ""}`;
+  const backdropClass = `awakening-cutin-backdrop kind-${escapeAttr(kind)}${manualDismiss ? " is-manual" : ""}`;
+  const backdropAction = isVictory ? "" : `data-action="dismiss-cutin"`;
+  const manualPrompt = kind === "awakening" ? "効果を確認してから閉じてください" : "内容を確認してから閉じてください";
   return `
-    <div class="${backdropClass}" data-action="dismiss-awakening">
-      <section class="awakening-cutin effect-${escapeAttr(cutIn.effectId || "unknown")}" ${roleAttrs} ${artAttrs}>
+    <div class="${backdropClass}" ${backdropAction}>
+      <section class="awakening-cutin kind-${escapeAttr(kind)} effect-${escapeAttr(cutIn.effectId || "unknown")}" ${roleAttrs} ${artAttrs}>
         ${artImage}
         <div class="awakening-cutin-sheen"></div>
         <div class="awakening-cutin-content">
@@ -463,17 +466,22 @@ function renderAwakeningCutIn(game) {
           <h2>${escapeHtml(title)}</h2>
           <p class="awakening-cutin-summary">${escapeHtml(cutIn.summary || "")}</p>
           ${cutIn.detail ? `<p class="awakening-cutin-detail">${escapeHtml(cutIn.detail)}</p>` : ""}
-          <span class="awakening-cutin-noble">${escapeHtml(nobleText)}</span>
+          ${sourceText ? `<span class="awakening-cutin-noble">${escapeHtml(sourceText)}</span>` : ""}
           ${
-            manualDismiss
+            isVictory
               ? `<div class="awakening-cutin-actions">
-                  <p>効果を確認してから閉じてください</p>
-                  <button class="awakening-cutin-dismiss" type="button" data-action="dismiss-awakening">閉じる</button>
+                  <p>結果を確認して新しいゲームを始められます</p>
+                  <button class="awakening-cutin-dismiss" type="button" data-action="new-game">新規ゲーム</button>
+                </div>`
+              : manualDismiss
+              ? `<div class="awakening-cutin-actions">
+                  <p>${manualPrompt}</p>
+                  <button class="awakening-cutin-dismiss" type="button" data-action="dismiss-cutin">閉じる</button>
                 </div>`
               : ""
           }
         </div>
-        <button class="awakening-cutin-close" type="button" data-action="dismiss-awakening" title="閉じる">×</button>
+        ${isVictory ? "" : `<button class="awakening-cutin-close" type="button" data-action="dismiss-cutin" title="閉じる">×</button>`}
       </section>
     </div>
   `;
@@ -489,7 +497,6 @@ function renderGameOver(game, winners) {
         <p class="eyebrow">Game Over</p>
         <h2>${winners.map((winner) => escapeHtml(winner.name)).join("、")} の勝利</h2>
       </div>
-      <button class="primary-button" type="button" data-action="new-game">新規ゲーム</button>
     </section>
   `;
 }
@@ -1164,23 +1171,80 @@ function getNobleMetadata(noble) {
   return currentData?.nobles?.find((candidate) => candidate.id === noble.id) || null;
 }
 
+function getCutInSource(cutIn) {
+  if (cutIn?.source?.type === "card" || cutIn?.source?.type === "noble") {
+    return cutIn.source;
+  }
+  if (cutIn?.noble) {
+    return { type: "noble", noble: cutIn.noble };
+  }
+  return null;
+}
+
+function getCutInArtData(source) {
+  if (source?.type === "card") {
+    return getCardArtData(source.card);
+  }
+  if (source?.type === "noble") {
+    return getNobleArtData(source.noble);
+  }
+  return null;
+}
+
+function getCutInSourceLabel(source) {
+  if (source?.type === "card") {
+    const card = source.card || {};
+    const color = COLOR_LABELS[card.bonus] || "";
+    return `Lv${card.level || "?"} ${color} / ${card.points || 0}点`;
+  }
+  if (source?.type === "noble") {
+    const noble = source.noble || {};
+    const nobleName = getNobleDisplayName(noble);
+    return nobleName ? `${nobleName} / ${noble.points || 0}点` : `${noble.points || 0}点の紋章`;
+  }
+  return "";
+}
+
+function getDefaultCutInTitle(cutIn) {
+  if (cutIn.kind === "finalRound") {
+    return "終了条件到達";
+  }
+  if (cutIn.kind === "victory") {
+    return "優勝";
+  }
+  return `${cutIn.effectLabel || "覚醒"} 覚醒`;
+}
+
 function cardArtAttrs(card) {
-  const art = getCardArt(card);
+  const art = getCardArtData(card);
   if (!art) {
     return "";
   }
 
-  const src = sanitizeCardArtSrc(art.src);
-  if (!src) {
-    return "";
+  return `style="--card-art-image: url('${escapeAttr(art.url)}'); --card-art-position: ${escapeAttr(art.position)};"`;
+}
+
+function getCardArtData(card) {
+  const art = getCardArt(card);
+  if (!art) {
+    return null;
   }
 
-  const url = new URL(`../${src}`, import.meta.url).href;
-  const position = sanitizeCssPosition(art.position) || "50% 50%";
-  return `style="--card-art-image: url('${escapeAttr(url)}'); --card-art-position: ${escapeAttr(position)};"`;
+  const src = sanitizeCardArtSrc(art.src);
+  if (!src) {
+    return null;
+  }
+
+  return {
+    url: new URL(`../${src}`, import.meta.url).href,
+    position: sanitizeCssPosition(art.position) || "50% 50%",
+  };
 }
 
 function getCardArt(card) {
+  if (!card) {
+    return null;
+  }
   const variantsByLevel = currentData?.cardArt?.variantsByColorAndLevel?.[card.bonus] || {};
   const variants =
     variantsByLevel[String(card.level)] ||
@@ -1329,30 +1393,30 @@ function disabledAttrs(reason) {
   return `aria-disabled="true" data-disabled-reason="${escapeAttr(reason)}"`;
 }
 
-function scheduleAwakeningCutInDismiss(game) {
-  const cutIn = game?.awakeningCutIn;
+function scheduleCutInDismiss(game) {
+  const cutIn = game?.cutIn || game?.awakeningCutIn;
   if (!cutIn) {
-    clearAwakeningCutInTimer();
+    clearCutInTimer();
     return;
   }
   if (cutIn.autoDismiss === false) {
-    clearAwakeningCutInTimer();
+    clearCutInTimer();
     activeCutInId = cutIn.id;
     return;
   }
   if (activeCutInId === cutIn.id && cutInTimer !== null) {
     return;
   }
-  clearAwakeningCutInTimer();
+  clearCutInTimer();
   activeCutInId = cutIn.id;
   cutInTimer = window.setTimeout(() => {
-    if (currentGame?.awakeningCutIn?.id === cutIn.id) {
-      handlers.onApplyAction({ type: "clearAwakeningCutIn" });
+    if ((currentGame?.cutIn || currentGame?.awakeningCutIn)?.id === cutIn.id) {
+      handlers.onApplyAction({ type: "clearCutIn" });
     }
   }, 1500);
 }
 
-function clearAwakeningCutInTimer() {
+function clearCutInTimer() {
   if (cutInTimer !== null) {
     window.clearTimeout(cutInTimer);
     cutInTimer = null;

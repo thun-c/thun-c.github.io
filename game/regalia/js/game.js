@@ -108,7 +108,7 @@ export function createNewGame(playerConfigs, data) {
     },
     nobles,
     pendingNobles: [],
-    awakeningCutIn: null,
+    cutIn: null,
     finalRoundTriggeredBy: null,
     log: [],
     winnerIds: [],
@@ -142,6 +142,7 @@ export function createPlayer(id, config) {
     nobles: [],
     awakeningTokens: 0,
     prestigeBonus: 0,
+    lastScoringSource: null,
     score: 0,
   };
 }
@@ -173,6 +174,7 @@ export function restoreGame(game) {
     nobles: (player.nobles || []).map(normalizeNoble),
     awakeningTokens: normalizeAwakeningTokens(player.awakeningTokens),
     prestigeBonus: normalizePrestigeBonus(player.prestigeBonus),
+    lastScoringSource: normalizeScoringSource(player.lastScoringSource) || inferLastScoringSource(player),
     score: player.score || 0,
   })));
   game.bank = normalizeTokens(game.bank);
@@ -183,7 +185,8 @@ export function restoreGame(game) {
     (game.nobles || []).map(normalizeNoble)
   );
   game.pendingNobles = game.pendingNobles || [];
-  game.awakeningCutIn = normalizeAwakeningCutIn(game.awakeningCutIn);
+  game.cutIn = normalizeCutIn(game.cutIn || game.awakeningCutIn);
+  delete game.awakeningCutIn;
   game.log = game.log || [];
   game.winnerIds = game.winnerIds || [];
   game.phase = game.phase || "action";
@@ -199,6 +202,14 @@ export function restoreGame(game) {
   game.startPlayerIndex = game.startPlayerIndex ?? game.turnOrder[0];
   game.round = game.round || 1;
   refreshScores(game);
+  if (game.phase === "gameOver") {
+    if (game.winnerIds.length === 0) {
+      game.winnerIds = getWinners(game);
+    }
+    if (game.cutIn?.kind !== "victory") {
+      setVictoryCutIn(game);
+    }
+  }
   return game;
 }
 
@@ -412,8 +423,10 @@ export function applyAction(game, action) {
     return game;
   }
 
-  if (action.type === "clearAwakeningCutIn") {
-    game.awakeningCutIn = null;
+  if (action.type === "clearCutIn" || action.type === "clearAwakeningCutIn") {
+    if (game.cutIn?.kind !== "victory") {
+      game.cutIn = null;
+    }
     game.updatedAt = Date.now();
     return game;
   }
@@ -521,6 +534,9 @@ export function buyCard(game, source) {
   });
   player.awakeningTokens -= payment.awakening || 0;
   player.cards.push(result.card);
+  if (result.card.points > 0) {
+    player.lastScoringSource = { type: "card", card: normalizeSourceCard(result.card) };
+  }
 
   if (result.sourceType === "market") {
     drawToMarket(game, levelKey(result.card.level));
@@ -727,21 +743,82 @@ function normalizePrestigeBonus(value) {
   return Math.max(0, Number(value || 0));
 }
 
-function normalizeAwakeningCutIn(cutIn) {
+function normalizeCutIn(cutIn) {
   if (!cutIn || typeof cutIn !== "object") {
     return null;
   }
-  const effect = getAwakeningEffect(cutIn.effectId);
+  const kind = normalizeCutInKind(cutIn.kind);
+  const isAwakening = kind === "awakening";
+  const effect = isAwakening ? getAwakeningEffect(cutIn.effectId) : null;
+  const effectLabel = String(cutIn.effectLabel || effect?.label || "");
+  const source = normalizeScoringSource(cutIn.source) ||
+    (cutIn.noble ? normalizeScoringSource({ type: "noble", noble: cutIn.noble }) : null);
   return {
     id: String(cutIn.id || Date.now()),
-    effectId: effect.id,
-    effectLabel: String(cutIn.effectLabel || effect.label),
+    kind,
+    effectId: effect?.id || String(cutIn.effectId || ""),
+    effectLabel,
     playerName: String(cutIn.playerName || ""),
-    autoDismiss: cutIn.autoDismiss !== false,
-    noble: normalizeNoble(cutIn.noble || {}),
-    summary: String(cutIn.summary || effect.description),
+    autoDismiss: kind === "victory" ? false : cutIn.autoDismiss !== false,
+    source,
+    title: String(cutIn.title || defaultCutInTitle(kind, effectLabel)),
+    summary: String(cutIn.summary || effect?.description || ""),
     detail: String(cutIn.detail || ""),
   };
+}
+
+function normalizeCutInKind(kind) {
+  const normalized = String(kind || "awakening");
+  return ["awakening", "finalRound", "victory"].includes(normalized) ? normalized : "awakening";
+}
+
+function defaultCutInTitle(kind, effectLabel) {
+  if (kind === "finalRound") {
+    return "終了条件到達";
+  }
+  if (kind === "victory") {
+    return "優勝";
+  }
+  return `${effectLabel || "覚醒"} 覚醒`;
+}
+
+function normalizeScoringSource(source) {
+  if (!source || typeof source !== "object") {
+    return null;
+  }
+  if (source.type === "card") {
+    const card = normalizeSourceCard(source.card);
+    return card ? { type: "card", card } : null;
+  }
+  if (source.type === "noble") {
+    const noble = normalizeSourceNoble(source.noble);
+    return noble ? { type: "noble", noble } : null;
+  }
+  return null;
+}
+
+function normalizeSourceCard(card) {
+  if (!card || typeof card !== "object") {
+    return null;
+  }
+  return normalizeCard(card);
+}
+
+function normalizeSourceNoble(noble) {
+  if (!noble || typeof noble !== "object") {
+    return null;
+  }
+  return normalizeNoble(noble);
+}
+
+function inferLastScoringSource(player) {
+  const nobles = (player.nobles || []).map(normalizeSourceNoble).filter(Boolean);
+  if (nobles.length > 0) {
+    return { type: "noble", noble: nobles[nobles.length - 1] };
+  }
+  const cards = (player.cards || []).map(normalizeSourceCard).filter(Boolean);
+  const scoringCard = cards.slice().reverse().find((card) => card.points > 0);
+  return scoringCard ? { type: "card", card: scoringCard } : null;
 }
 
 function normalizeAwakeningEffectId(effectId) {
@@ -1071,6 +1148,7 @@ function claimNobleInternal(game, nobleId) {
   }
   const [noble] = game.nobles.splice(index, 1);
   player.nobles.push(noble);
+  player.lastScoringSource = { type: "noble", noble: normalizeSourceNoble(noble) };
   const effectText = applyNobleAwakeningEffect(game, player, noble);
   refreshScores(game);
   addLog(game, `${player.name} が紋章タイルを獲得しました。${effectText}`);
@@ -1130,20 +1208,16 @@ function applyNobleAwakeningEffect(game, player, noble) {
 }
 
 function setAwakeningCutIn(game, player, noble, effect, summary, detail) {
-  game.awakeningCutIn = {
+  const source = { type: "noble", noble: normalizeSourceNoble(noble) };
+  game.cutIn = {
     id: `${Date.now()}-${player.id}-${noble.id}-${effect.id}`,
+    kind: "awakening",
     effectId: effect.id,
     effectLabel: effect.label,
     playerName: player.name,
     autoDismiss: player.type !== "human",
-    noble: {
-      id: noble.id,
-      name: noble.name,
-      points: noble.points,
-      requirement: { ...noble.requirement },
-      awakeningEffectId: noble.awakeningEffectId,
-      ...(noble.art ? { art: noble.art } : {}),
-    },
+    source,
+    title: `${effect.label} 覚醒`,
     summary,
     detail,
   };
@@ -1175,8 +1249,10 @@ function completeTurn(game) {
   const player = getCurrentPlayer(game);
 
   const endScore = getPlayerEndScore(player, game.players.length);
+  let finalRoundTriggeredNow = false;
   if (game.finalRoundTriggeredBy === null && player.score >= endScore) {
     game.finalRoundTriggeredBy = player.id;
+    finalRoundTriggeredNow = true;
     addLog(game, `${player.name} が${endScore}点に到達しました。このラウンドで終了します。`);
   }
 
@@ -1185,9 +1261,14 @@ function completeTurn(game) {
   if (game.finalRoundTriggeredBy !== null && nextIndex === game.startPlayerIndex) {
     game.phase = "gameOver";
     game.winnerIds = getWinners(game);
+    setVictoryCutIn(game);
     addLog(game, `ゲーム終了。勝者: ${game.winnerIds.map((id) => game.players[id].name).join("、")}`);
     game.updatedAt = Date.now();
     return game;
+  }
+
+  if (finalRoundTriggeredNow) {
+    setFinalRoundCutIn(game, player, endScore);
   }
 
   game.currentTurnOrderIndex = nextTurnOrderIndex;
@@ -1199,6 +1280,42 @@ function completeTurn(game) {
   game.pendingNobles = [];
   game.updatedAt = Date.now();
   return game;
+}
+
+function setFinalRoundCutIn(game, player, endScore) {
+  game.cutIn = {
+    id: `${Date.now()}-${player.id}-final-round`,
+    kind: "finalRound",
+    playerName: player.name,
+    autoDismiss: player.type !== "human",
+    source: normalizeScoringSource(player.lastScoringSource),
+    title: "終了条件到達",
+    summary: `${player.name}が${endScore}点に到達`,
+    detail: "このラウンドで終了します",
+  };
+}
+
+function setVictoryCutIn(game) {
+  refreshScores(game);
+  if (game.winnerIds.length === 0) {
+    game.winnerIds = getWinners(game);
+  }
+  const winners = game.winnerIds.map((id) => game.players[id]).filter(Boolean);
+  const primaryWinner = winners[0];
+  const winnerNames = winners.map((winner) => winner.name).join("、");
+  const detail = winners
+    .map((winner) => `${winner.score}点 / 購入${winner.cards.length}枚`)
+    .join("、");
+  game.cutIn = {
+    id: `${Date.now()}-${game.winnerIds.join("-")}-victory`,
+    kind: "victory",
+    playerName: winnerNames,
+    autoDismiss: false,
+    source: normalizeScoringSource(primaryWinner?.lastScoringSource) || inferLastScoringSource(primaryWinner || {}),
+    title: "優勝",
+    summary: `${winnerNames}の勝利`,
+    detail,
+  };
 }
 
 function normalizeTurnOrder(game) {

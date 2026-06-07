@@ -161,7 +161,7 @@ function continueCpuTurnIfNeeded() {
     renderNow();
     return;
   }
-  if (game.awakeningCutIn) {
+  if (game.cutIn) {
     busy = false;
     renderNow();
     return;

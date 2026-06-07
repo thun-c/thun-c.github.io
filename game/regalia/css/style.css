@@ -1599,6 +1599,28 @@ button.noble-tile.is-claimable {
     0 0 36px rgba(255, 184, 82, 0.35);
 }
 
+.awakening-cutin.kind-finalRound {
+  border-color: rgba(255, 230, 153, 0.84);
+  background: linear-gradient(110deg, rgba(17, 18, 24, 0.98), rgba(93, 62, 24, 0.94) 48%, rgba(34, 73, 68, 0.95));
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 250, 224, 0.12) inset,
+    0 0 38px rgba(244, 194, 84, 0.34);
+}
+
+.awakening-cutin.kind-victory {
+  border-color: rgba(255, 244, 189, 0.95);
+  background: linear-gradient(110deg, rgba(16, 12, 17, 0.98), rgba(125, 72, 26, 0.94) 48%, rgba(24, 79, 77, 0.96));
+  box-shadow:
+    0 34px 82px rgba(0, 0, 0, 0.56),
+    0 0 0 1px rgba(255, 250, 224, 0.16) inset,
+    0 0 48px rgba(255, 213, 104, 0.42);
+}
+
+.awakening-cutin.kind-victory h2 {
+  color: #ffffff;
+}
+
 .game-over-banner,
 .choice-banner {
   max-width: 1500px;
