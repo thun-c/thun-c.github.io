@@ -111,6 +111,16 @@ function handleClick(event) {
     return;
   }
 
+  if (action === "share-x") {
+    shareVictoryOnX();
+    return;
+  }
+
+  if (action === "share-x-default") {
+    shareDefaultOnX();
+    return;
+  }
+
   if (action === "new-game") {
     if (currentGame && currentGame.phase !== "gameOver") {
       modal = { type: "confirmNewGame" };
@@ -372,6 +382,7 @@ function renderGame(game, data, options) {
         </div>
         <div class="topbar-status">
           <button class="ghost-button topbar-button" type="button" data-action="new-game">新規ゲーム</button>
+          <button class="ghost-button topbar-button" type="button" data-action="share-x-default">Xで共有</button>
         </div>
       </header>
       ${renderGameOver(game, winners)}
@@ -472,6 +483,7 @@ function renderCutIn(game) {
               ? `<div class="awakening-cutin-actions">
                   <p>結果を確認して新しいゲームを始められます</p>
                   <button class="awakening-cutin-dismiss" type="button" data-action="new-game">新規ゲーム</button>
+                  <button class="awakening-cutin-dismiss awakening-cutin-share" type="button" data-action="share-x">Xで共有</button>
                 </div>`
               : manualDismiss
               ? `<div class="awakening-cutin-actions">
@@ -1169,6 +1181,76 @@ function getNobleDisplayName(noble) {
 
 function getNobleMetadata(noble) {
   return currentData?.nobles?.find((candidate) => candidate.id === noble.id) || null;
+}
+
+function shareVictoryOnX() {
+  if (!currentGame) {
+    return;
+  }
+  openShareOnX(buildVictoryShareText(currentGame));
+}
+
+function shareDefaultOnX() {
+  openShareOnX(buildDefaultShareText());
+}
+
+function openShareOnX(text) {
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+function buildDefaultShareText() {
+  return [
+    "# 五燈のレガリア",
+    getSharePageUrl(),
+    "五燈のレガリアを遊びました。",
+  ].join("\n");
+}
+
+function buildVictoryShareText(game) {
+  return [
+    "# 五燈のレガリア",
+    getSharePageUrl(),
+    buildVictoryShareSentence(game),
+  ].join("\n");
+}
+
+function getSharePageUrl() {
+  const url = new URL(window.location.href);
+  url.hash = "";
+  return url.toString();
+}
+
+function buildVictoryShareSentence(game) {
+  const players = game.players || [];
+  const winnerIds = game.winnerIds || [];
+  const hasCpu = players.some((player) => player.type === "cpu");
+  const humanWinners = winnerIds.filter((id) => players[id]?.type === "human");
+  const allWinnersAreHuman = winnerIds.length > 0 && humanWinners.length === winnerIds.length;
+
+  if (allWinnersAreHuman && hasCpu) {
+    const cpu = getHighestLevelCpu(players);
+    return `${cpu?.name || "CPU"}に勝利しました。`;
+  }
+
+  const humanCount = players.filter((player) => player.type === "human").length;
+  if (humanCount > 1) {
+    return "みんなで五燈のレガリアを遊びました。";
+  }
+  return "五燈のレガリアを遊びました。";
+}
+
+function getHighestLevelCpu(players) {
+  return players
+    .filter((player) => player.type === "cpu")
+    .slice()
+    .sort((a, b) => getCpuLevel(b) - getCpuLevel(a))[0] || null;
+}
+
+function getCpuLevel(player) {
+  const source = `${player.difficulty || ""} ${player.name || ""}`;
+  const match = source.match(/lv\s*0?(\d+)/i);
+  return match ? Number(match[1]) : 0;
 }
 
 function getCutInSource(cutIn) {

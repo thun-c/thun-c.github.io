@@ -1553,6 +1553,16 @@ button.noble-tile.is-claimable {
   background: #ffffff;
 }
 
+.awakening-cutin-share {
+  background: rgba(20, 20, 20, 0.72);
+  border-color: rgba(255, 244, 208, 0.52);
+  color: #ffffff;
+}
+
+.awakening-cutin-share:hover {
+  background: #111111;
+}
+
 .awakening-cutin-close {
   position: absolute;
   top: 12px;
