@@ -1276,7 +1276,7 @@ function openShareOnX(text) {
 
 function buildDefaultShareText() {
   return [
-    "# 五燈のレガリア",
+    "#五燈のレガリア",
     getSharePageUrl(),
     "五燈のレガリアを遊びました。",
   ].join("\n");
@@ -1284,7 +1284,7 @@ function buildDefaultShareText() {
 
 function buildVictoryShareText(game) {
   return [
-    "# 五燈のレガリア",
+    "#五燈のレガリア",
     getSharePageUrl(),
     buildVictoryShareSentence(game),
   ].join("\n");
