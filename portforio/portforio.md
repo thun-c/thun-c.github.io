@@ -200,7 +200,7 @@ one_player_maze/one_player_maze.html
 
 ### 五燈のレガリア
 ![](game/regalia/assets/share/regalia-card.webp){type=special}
-game/regalia/one_player_maze.html
+game/regalia/index.html
 マナと魔法兵を集める拡大再生産ゲーム
 
 ---
