@@ -198,6 +198,11 @@ AHCの形式に対応したローカルテスタも同梱しており、AHCの�
 one_player_maze/one_player_maze.html
 ゲームで学ぶ探索アルゴリズム実践入門で紹介したゲームをweb上で遊ぶことができる
 
+### 五燈のレガリア
+![](game/regalia/assets/share/regalia-card.webp){type=special}
+game/regalia/one_player_maze.html
+マナと魔法兵を集める拡大再生産ゲーム
+
 ---
 id: downloads
 icon: portforio/img/icons/download.png
