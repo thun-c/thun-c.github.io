@@ -1,0 +1,14 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "entries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "clearedStages", "order": "DESCENDING" },
+        { "fieldPath": "turnsToLastClear", "order": "ASCENDING" },
+        { "fieldPath": "killDifference", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

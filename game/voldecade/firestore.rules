@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedInAs(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    function validEntry() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['uid', 'name', 'clearedStages', 'turnsToLastClear', 'killDifference', 'enemyDefeated', 'playerDefeated', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'name', 'clearedStages', 'turnsToLastClear', 'killDifference', 'enemyDefeated', 'playerDefeated', 'updatedAt'])
+        && data.uid == request.auth.uid
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 24
+        && data.clearedStages is int && data.clearedStages >= 0 && data.clearedStages <= 10
+        && (data.turnsToLastClear == null || (data.turnsToLastClear is int && data.turnsToLastClear >= 0))
+        && data.killDifference is int
+        && data.enemyDefeated is int && data.enemyDefeated >= 0
+        && data.playerDefeated is int && data.playerDefeated >= 0;
+    }
+    match /users/{uid} {
+      allow read, write: if signedInAs(uid);
+    }
+    match /leaderboards/{season}/entries/{uid} {
+      allow read: if true;
+      allow create, update: if signedInAs(uid) && validEntry();
+      allow delete: if signedInAs(uid);
+    }
+  }
+}
