@@ -1,9 +1,25 @@
 const CACHE = "voldecade-static-abeea20539718afb";
-const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./ai-worker.js?v=37e3bb37dd1553f3", "./manifest.webmanifest", "./assets/design/fabicon/fabicon.png", ...["./assets/design/character/base/icon_0001.png","./assets/design/character/base/lose_0001.png","./assets/design/character/base/lose_0002.png","./assets/design/character/base/move_b_0001.png","./assets/design/character/base/move_b_0002.png","./assets/design/character/base/move_f_0001.png","./assets/design/character/base/move_f_0002.png","./assets/design/character/base/move_l_0001.png","./assets/design/character/base/move_l_0002.png","./assets/design/character/base/move_r_0001.png","./assets/design/character/base/move_r_0002.png","./assets/design/character/base/set_0001.png","./assets/design/character/base/set_0002.png","./assets/design/character/base/stand_b_0001.png","./assets/design/character/base/stand_b_0002.png","./assets/design/character/base/stand_f_0001.png","./assets/design/character/base/stand_f_0002.png","./assets/design/character/base/stand_l_0001.png","./assets/design/character/base/stand_l_0002.png","./assets/design/character/base/stand_r_0001.png","./assets/design/character/base/stand_r_0002.png","./assets/design/character/base/win_0001.png","./assets/design/character/base/win_0002.png","./assets/design/character/likehuman/icon_0001.png","./assets/design/character/likehuman/lose_0001.png","./assets/design/character/likehuman/lose_0002.png","./assets/design/character/likehuman/move_b_0001.png","./assets/design/character/likehuman/move_b_0002.png","./assets/design/character/likehuman/move_f_0001.png","./assets/design/character/likehuman/move_f_0002.png","./assets/design/character/likehuman/move_l_0001.png","./assets/design/character/likehuman/move_l_0002.png","./assets/design/character/likehuman/move_r_0001.png","./assets/design/character/likehuman/move_r_0002.png","./assets/design/character/likehuman/set_0001.png","./assets/design/character/likehuman/set_0002.png","./assets/design/character/likehuman/stand_b_0001.png","./assets/design/character/likehuman/stand_b_0002.png","./assets/design/character/likehuman/stand_f_0001.png","./assets/design/character/likehuman/stand_f_0002.png","./assets/design/character/likehuman/stand_l_0001.png","./assets/design/character/likehuman/stand_l_0002.png","./assets/design/character/likehuman/stand_r_0001.png","./assets/design/character/likehuman/stand_r_0002.png","./assets/design/character/likehuman/win_0001.png","./assets/design/character/likehuman/win_0002.png","./assets/design/character/onebomb/icon_0001.png","./assets/design/character/onebomb/lose_0001.png","./assets/design/character/onebomb/lose_0002.png","./assets/design/character/onebomb/move_b_0001.png","./assets/design/character/onebomb/move_b_0002.png","./assets/design/character/onebomb/move_f_0001.png","./assets/design/character/onebomb/move_f_0002.png","./assets/design/character/onebomb/move_l_0001.png","./assets/design/character/onebomb/move_l_0002.png","./assets/design/character/onebomb/move_r_0001.png","./assets/design/character/onebomb/move_r_0002.png","./assets/design/character/onebomb/set_0001.png","./assets/design/character/onebomb/set_0002.png","./assets/design/character/onebomb/stand_b_0001.png","./assets/design/character/onebomb/stand_b_0002.png","./assets/design/character/onebomb/stand_f_0001.png","./assets/design/character/onebomb/stand_f_0002.png","./assets/design/character/onebomb/stand_l_0001.png","./assets/design/character/onebomb/stand_l_0002.png","./assets/design/character/onebomb/stand_r_0001.png","./assets/design/character/onebomb/stand_r_0002.png","./assets/design/character/onebomb/win_0001.png","./assets/design/character/onebomb/win_0002.png","./assets/design/character/plan/icon_0001.png","./assets/design/character/plan/lose_0001.png","./assets/design/character/plan/lose_0002.png","./assets/design/character/plan/move_b_0001.png","./assets/design/character/plan/move_b_0002.png","./assets/design/character/plan/move_f_0001.png","./assets/design/character/plan/move_f_0002.png","./assets/design/character/plan/move_l_0001.png","./assets/design/character/plan/move_l_0002.png","./assets/design/character/plan/move_r_0001.png","./assets/design/character/plan/move_r_0002.png","./assets/design/character/plan/set_0001.png","./assets/design/character/plan/set_0002.png","./assets/design/character/plan/stand_b_0001.png","./assets/design/character/plan/stand_b_0002.png","./assets/design/character/plan/stand_f_0001.png","./assets/design/character/plan/stand_f_0002.png","./assets/design/character/plan/stand_l_0001.png","./assets/design/character/plan/stand_l_0002.png","./assets/design/character/plan/stand_r_0001.png","./assets/design/character/plan/stand_r_0002.png","./assets/design/character/plan/win_0001.png","./assets/design/character/plan/win_0002.png","./assets/design/character/player/icon_0001.png","./assets/design/character/player/lose_0001.png","./assets/design/character/player/lose_0002.png","./assets/design/character/player/move_b_0001.png","./assets/design/character/player/move_b_0002.png","./assets/design/character/player/move_f_0001.png","./assets/design/character/player/move_f_0002.png","./assets/design/character/player/move_l_0001.png","./assets/design/character/player/move_l_0002.png","./assets/design/character/player/move_r_0001.png","./assets/design/character/player/move_r_0002.png","./assets/design/character/player/set_0001.png","./assets/design/character/player/set_0002.png","./assets/design/character/player/stand_b_0001.png","./assets/design/character/player/stand_b_0002.png","./assets/design/character/player/stand_f_0001.png","./assets/design/character/player/stand_f_0002.png","./assets/design/character/player/stand_l_0001.png","./assets/design/character/player/stand_l_0002.png","./assets/design/character/player/stand_r_0001.png","./assets/design/character/player/stand_r_0002.png","./assets/design/character/player/win_0001.png","./assets/design/character/player/win_0002.png","./assets/design/character/search/icon_0001.png","./assets/design/character/search/lose_0001.png","./assets/design/character/search/lose_0002.png","./assets/design/character/search/move_b_0001.png","./assets/design/character/search/move_b_0002.png","./assets/design/character/search/move_f_0001.png","./assets/design/character/search/move_f_0002.png","./assets/design/character/search/move_l_0001.png","./assets/design/character/search/move_l_0002.png","./assets/design/character/search/move_r_0001.png","./assets/design/character/search/move_r_0002.png","./assets/design/character/search/set_0001.png","./assets/design/character/search/set_0002.png","./assets/design/character/search/stand_b_0001.png","./assets/design/character/search/stand_b_0002.png","./assets/design/character/search/stand_f_0001.png","./assets/design/character/search/stand_f_0002.png","./assets/design/character/search/stand_l_0001.png","./assets/design/character/search/stand_l_0002.png","./assets/design/character/search/stand_r_0001.png","./assets/design/character/search/stand_r_0002.png","./assets/design/character/search/win_0001.png","./assets/design/character/search/win_0002.png","./assets/design/character/sides/icon_0001.png","./assets/design/character/sides/lose_0001.png","./assets/design/character/sides/lose_0002.png","./assets/design/character/sides/move_b_0001.png","./assets/design/character/sides/move_b_0002.png","./assets/design/character/sides/move_f_0001.png","./assets/design/character/sides/move_f_0002.png","./assets/design/character/sides/move_l_0001.png","./assets/design/character/sides/move_l_0002.png","./assets/design/character/sides/move_r_0001.png","./assets/design/character/sides/move_r_0002.png","./assets/design/character/sides/set_0001.png","./assets/design/character/sides/set_0002.png","./assets/design/character/sides/stand_b_0001.png","./assets/design/character/sides/stand_b_0002.png","./assets/design/character/sides/stand_f_0001.png","./assets/design/character/sides/stand_f_0002.png","./assets/design/character/sides/stand_l_0001.png","./assets/design/character/sides/stand_l_0002.png","./assets/design/character/sides/stand_r_0001.png","./assets/design/character/sides/stand_r_0002.png","./assets/design/character/sides/win_0001.png","./assets/design/character/sides/win_0002.png","./assets/design/bomb/bomb_000.png","./assets/design/bomb/bomb_001.png","./assets/design/bomb/fire_0.png","./assets/design/bomb/fire_1.png","./assets/design/bomb/number_1.png","./assets/design/bomb/number_2.png","./assets/design/bomb/number_3.png","./assets/design/bomb/number_4.png","./assets/design/bomb/number_5.png","./assets/design/bomb/number_6.png","./assets/design/bomb/number_7.png","./assets/design/bomb/number_8.png","./assets/design/bomb/number_9.png","./assets/design/bomb/number_i.png","./assets/design/stage/floor.png","./assets/design/stage/soft.png","./assets/design/stage/hard.png","./assets/design/stage/soft_c.png","./assets/design/stage/soft_p.png","./assets/design/item/item_c.png","./assets/design/item/item_p.png","./assets/design/arrow/r.png","./assets/design/arrow/l.png","./assets/design/arrow/u.png","./assets/design/arrow/d.png","./assets/design/arrow/w.png","./assets/design/arrow/mr.png","./assets/design/arrow/ml.png","./assets/design/arrow/mu.png","./assets/design/arrow/md.png","./assets/design/arrow/mw.png","./assets/sound/bgm.ogg","./assets/sound/thunder.mp3","./assets/sound/set_magic.mp3","./assets/sound/item.mp3"]];
+const SHELL_ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./ai-worker.js?v=37e3bb37dd1553f3", "./manifest.webmanifest", "./assets/design/fabicon/fabicon.png"];
+const MAX_RUNTIME_ASSETS = 96;
+
+function isRuntimeAsset(url) {
+  return url.pathname.includes("/assets/") || url.pathname.endsWith("/firebase-online.js");
+}
+
+function shouldCache(request, url) {
+  return request.mode === "navigate" || isRuntimeAsset(url) || SHELL_ASSETS.some((asset) => new URL(asset, self.registration.scope).pathname === url.pathname);
+}
+
+async function pruneRuntimeAssets(cache) {
+  const requests = (await cache.keys()).filter((request) => isRuntimeAsset(new URL(request.url)));
+  while (requests.length > MAX_RUNTIME_ASSETS) {
+    const oldest = requests.shift();
+    if (oldest) await cache.delete(oldest);
+  }
+}
 
 self.addEventListener("install", (event) => {
-  // Activation does not reload an in-progress game; the new files apply on the next navigation.
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL_ASSETS)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {
@@ -14,19 +30,35 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
-  event.respondWith(fetch(event.request).then((response) => {
-    if (response.ok && response.type !== "opaque") {
-      const copy = response.clone();
-      event.waitUntil(caches.open(CACHE).then((cache) => cache.put(event.request, copy)));
+
+  let cacheWork = Promise.resolve();
+  const responseWork = (async () => {
+    const cache = await caches.open(CACHE);
+    const cached = await cache.match(event.request);
+    if (cached !== undefined) {
+      if (isRuntimeAsset(url)) {
+        cacheWork = cache.delete(event.request)
+          .then(() => cache.put(event.request, cached.clone()))
+          .then(() => pruneRuntimeAssets(cache))
+          .catch(() => undefined);
+      }
+      return cached;
     }
-    return response;
-  }).catch(async () => {
-    const cached = await caches.match(event.request);
-    if (cached !== undefined) return cached;
-    if (event.request.mode === "navigate") {
-      const shell = await caches.match("./index.html");
-      if (shell !== undefined) return shell;
+
+    try {
+      const response = await fetch(event.request);
+      if (response.ok && response.type !== "opaque" && shouldCache(event.request, url)) {
+        cacheWork = cache.put(event.request, response.clone()).then(() => pruneRuntimeAssets(cache)).catch(() => undefined);
+      }
+      return response;
+    } catch {
+      if (event.request.mode === "navigate") {
+        const shell = await cache.match("./index.html");
+        if (shell !== undefined) return shell;
+      }
+      return Response.error();
     }
-    return Response.error();
-  }));
+  })();
+  event.waitUntil(responseWork.then(() => cacheWork, () => undefined));
+  event.respondWith(responseWork);
 });
