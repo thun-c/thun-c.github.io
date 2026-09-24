@@ -178,6 +178,11 @@ textarea { width: 100%; padding: .75rem; border: 2px solid #172033; border-radiu
   .pad-row { grid-template-columns: 1fr; }
   .character-card span { font-size: .72rem; }
 }
+@media (pointer: coarse) and (orientation: portrait) {
+  .game-screen .control-panel button { min-height: clamp(48px, 11vw, 108px); font-size: clamp(16px, 3.8vw, 34px); }
+  .game-screen .direction-pad button { min-width: clamp(52px, 12vw, 118px); min-height: clamp(52px, 12vw, 118px); padding: 0; }
+  .game-screen .control-button-icon { max-height: clamp(56px, 12vw, 118px); }
+}
 @media (orientation: landscape) and (max-height: 600px) {
   .game-header { margin-bottom: .4rem; }
   .play-layout { grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); }
