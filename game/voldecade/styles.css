@@ -62,7 +62,7 @@ h1 { margin: .25rem 0 1rem; font-size: clamp(2.2rem, 8vw, 5rem); letter-spacing:
 .roster-items img { width: 17px; height: 17px; image-rendering: pixelated; }
 .roster-volume { display: grid; gap: .1rem; align-content: center; font-size: .72rem; font-weight: 700; text-align: center; }
 .roster-volume input { width: 100%; min-width: 0; }
-@media (min-width: 721px) { .roster-volume { grid-column: 4; } }
+@media (min-width: 901px) { .roster-volume { grid-column: 4; } }
 .control-panel { display: grid; gap: .75rem; }
 .mode-row, .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
 .pad-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
@@ -137,7 +137,7 @@ body:has(.result-popup[open]) { overflow: hidden; }
 .replay-list { padding: 0; list-style: none; }
 .replay-list li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid #aaa; padding: .6rem 0; }
 .replay-list-actions { display: flex; flex-wrap: wrap; gap: .5rem; flex-shrink: 0; }
-@media (max-width: 720px) { .replay-list li { flex-direction: column; align-items: stretch; } }
+@media (max-width: 900px), (pointer: coarse) and (orientation: portrait) { .replay-list li { flex-direction: column; align-items: stretch; } }
 .replay-controls h2, .replay-controls .eyebrow { margin: 0; }
 .replay-controls input[type="range"] { width: 100%; }
 .replay-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: .35rem; }
@@ -148,11 +148,11 @@ body:has(.result-popup[open]) { overflow: hidden; }
 .replay-actions { margin: 0; padding: .65rem; border-radius: 8px; background: #fff8d9; line-height: 1.5; }
 textarea { width: 100%; padding: .75rem; border: 2px solid #172033; border-radius: 8px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-@media (max-width: 720px), (orientation: landscape) and (max-height: 600px) {
+@media (max-width: 900px), (pointer: coarse) and (orientation: portrait), (orientation: landscape) and (max-height: 600px) {
   .account-badge { position: static; width: fit-content; min-width: 0; max-width: 100%; margin: 0 0 .5rem auto; justify-self: end; align-self: start; line-height: 1.4; }
   .home-screen:has(> .account-badge), .result-screen:has(> .account-badge) { grid-template-rows: min-content; }
 }
-@media (max-width: 720px) {
+@media (max-width: 900px), (pointer: coarse) and (orientation: portrait) {
   .screen { padding: .5rem; }
   .game-header { grid-template-columns: auto 1fr; gap: .4rem; }
   .game-header div:last-child { grid-column: 1 / -1; }
