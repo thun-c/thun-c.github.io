@@ -6186,7 +6186,7 @@ exports.persistOnlineAuth = persistOnlineAuth;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SoundManager = void 0;
 const soundPaths = {
-    bgm: "./assets/sound/bgm.ogg",
+    bgm: "./assets/sound/bgm-loop.ogg",
     thunder: "./assets/sound/thunder.mp3",
     setMagic: "./assets/sound/set_magic.mp3",
     item: "./assets/sound/item.mp3",
@@ -6194,33 +6194,6 @@ const soundPaths = {
 const BGM_VOLUME_RATIO = 0.65;
 // Video exports use the normal mid-level setting regardless of the in-game slider.
 const EXPORT_AUDIO_VOLUME = 0.5;
-const findLoopEnd = (buffer) => {
-    const data = buffer.getChannelData(0);
-    const rate = buffer.sampleRate;
-    const start = Math.round(0.45 * rate);
-    const window = Math.round(0.08 * rate);
-    const minEnd = Math.round(37 * rate);
-    const maxEnd = Math.min(data.length - window - 1, Math.round(38 * rate));
-    let bestEnd = Math.round(37.5 * rate);
-    let bestScore = -Infinity;
-    let startEnergy = 0;
-    for (let i = 0; i < window; i += 1)
-        startEnergy += data[start + i] ** 2;
-    for (let candidate = minEnd; candidate <= maxEnd; candidate += Math.max(1, Math.round(rate / 200))) {
-        let dot = 0;
-        let candidateEnergy = 0;
-        for (let i = 0; i < window; i += 1) {
-            dot += data[start + i] * data[candidate + i];
-            candidateEnergy += data[candidate + i] ** 2;
-        }
-        const score = dot / Math.sqrt((startEnergy * candidateEnergy) || 1);
-        if (score > bestScore) {
-            bestScore = score;
-            bestEnd = candidate;
-        }
-    }
-    return { start: start / rate, end: bestEnd / rate };
-};
 class SoundManager {
     constructor() {
         this.effects = new Map();
@@ -6233,8 +6206,8 @@ class SoundManager {
         this.bgmBuffer = null;
         this.bgmSource = null;
         this.bgmLoad = null;
-        this.bgmLoopStart = 0.45;
-        this.bgmLoopEnd = 37.5;
+        this.bgmLoopStart = 0;
+        this.bgmLoopEnd = 0;
         this.bgmOffset = this.bgmLoopStart;
         this.bgmStartedAt = 0;
         this.volume = 0.5;
@@ -6277,13 +6250,11 @@ class SoundManager {
             await this.loadBgm();
             if (this.bgmBuffer !== null && this.bgmSource === null) {
                 const source = this.context.createBufferSource();
-                const loop = findLoopEnd(this.bgmBuffer);
-                this.bgmLoopStart = loop.start;
-                this.bgmLoopEnd = loop.end;
+                this.bgmLoopEnd = this.bgmBuffer.duration;
                 source.buffer = this.bgmBuffer;
                 source.loop = true;
-                source.loopStart = loop.start;
-                source.loopEnd = loop.end;
+                source.loopStart = this.bgmLoopStart;
+                source.loopEnd = this.bgmLoopEnd;
                 source.connect(this.gain);
                 if (this.captureBgmGain !== null)
                     source.connect(this.captureBgmGain);

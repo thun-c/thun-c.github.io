@@ -1,4 +1,4 @@
-const CACHE = "voldecade-static-7b8a8a0876363f03";
+const CACHE = "voldecade-static-a58ee5db044e4359";
 const SHELL_ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./ai-worker.js?v=37e3bb37dd1553f3", "./manifest.webmanifest", "./assets/design/fabicon/fabicon.png"];
 const MAX_RUNTIME_ASSETS = 96;
 
