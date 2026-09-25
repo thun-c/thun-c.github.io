@@ -10,7 +10,7 @@ service cloud.firestore {
         && data.keys().hasOnly(['uid', 'name', 'clearedStages', 'turnsToLastClear', 'killDifference', 'enemyDefeated', 'playerDefeated', 'updatedAt'])
         && data.uid == request.auth.uid
         && data.name is string && data.name.size() > 0 && data.name.size() <= 24
-        && data.clearedStages is int && data.clearedStages >= 0 && data.clearedStages <= 10
+        && data.clearedStages is int && data.clearedStages >= 0 && data.clearedStages <= 1000
         && (data.turnsToLastClear == null || (data.turnsToLastClear is int && data.turnsToLastClear >= 0))
         && data.killDifference is int
         && data.enemyDefeated is int && data.enemyDefeated >= 0
