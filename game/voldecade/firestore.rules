@@ -4,12 +4,15 @@ service cloud.firestore {
     function signedInAs(uid) {
       return request.auth != null && request.auth.uid == uid;
     }
+    function validDisplayName(name) {
+      return name is string && name.size() > 0 && name.size() <= 24;
+    }
     function validEntry() {
       let data = request.resource.data;
       return data.keys().hasAll(['uid', 'name', 'clearedStages', 'turnsToLastClear', 'killDifference', 'enemyDefeated', 'playerDefeated', 'updatedAt'])
         && data.keys().hasOnly(['uid', 'name', 'clearedStages', 'turnsToLastClear', 'killDifference', 'enemyDefeated', 'playerDefeated', 'updatedAt'])
         && data.uid == request.auth.uid
-        && data.name is string && data.name.size() > 0 && data.name.size() <= 24
+        && validDisplayName(data.name)
         && data.clearedStages is int && data.clearedStages >= 0 && data.clearedStages <= 1000
         && (data.turnsToLastClear == null || (data.turnsToLastClear is int && data.turnsToLastClear >= 0))
         && data.killDifference is int
@@ -17,7 +20,8 @@ service cloud.firestore {
         && data.playerDefeated is int && data.playerDefeated >= 0;
     }
     match /users/{uid} {
-      allow read, write: if signedInAs(uid);
+      allow read, delete: if signedInAs(uid);
+      allow create, update: if signedInAs(uid) && validDisplayName(request.resource.data.displayName);
     }
     match /leaderboards/{season}/entries/{uid} {
       allow read: if true;

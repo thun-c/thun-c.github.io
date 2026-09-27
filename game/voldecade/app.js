@@ -958,7 +958,7 @@ class BrowserApp {
       ${current === null ? `<section><h2>ランキングに参加する</h2>
         <p>Googleアカウントでログインします。ランキングにはGoogleの名前ではなく、ここで入力した表示名が公開されます。</p>
         <form class="online-auth-form" autocomplete="on">
-          <label>ランキング表示名 <input id="online-name" name="nickname" maxlength="24" autocomplete="nickname" value="${escapeHtml(this.onlineName)}"></label>
+          <label>ランキング表示名（24文字以内） <input id="online-name" name="nickname" maxlength="24" autocomplete="nickname" value="${escapeHtml(this.onlineName)}"></label>
           <button type="button" class="primary" data-action="online-google-login">${this.onlineOperation === "login" ? onlineProgress.login : "Googleアカウントでログイン"}</button>
         </form>
       </section>` : `<section><p>${escapeHtml(current.name)}でログイン中。ランキングに表示される名前は入力した表示名です。</p>
@@ -6104,7 +6104,9 @@ const api = async () => {
 const cachedAuth = () => {
     try {
         const value = JSON.parse(localStorage.getItem(AUTH_KEY) ?? "null");
-        return value && typeof value.name === "string" && typeof value.token === "string" ? value : null;
+        return value && typeof value.name === "string" && value.name.length > 0 && value.name.length <= 24
+            && value.name === value.name.replace(/[\u0000-\u001f<>]/g, "").trim()
+            && typeof value.token === "string" ? value : null;
     }
     catch {
         return null;

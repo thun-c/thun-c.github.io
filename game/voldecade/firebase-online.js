@@ -20628,7 +20628,8 @@ onAuthStateChanged(auth, (user) => {
   resolveAuthReady?.();
   resolveAuthReady = null;
 });
-var cleanName = (value) => value.replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 24);
+var cleanName = (value) => value.replace(/[\u0000-\u001f<>]/g, "").trim();
+var validName = (value) => typeof value === "string" && value === cleanName(value) && value.length > 0 && value.length <= 24;
 var authFor = (user, name4) => {
   const result = { name: name4, token: user.uid };
   localStorage.setItem(CACHE_KEY, JSON.stringify(result));
@@ -20654,14 +20655,15 @@ var getOnlineAuth = () => {
   if (user === null) return null;
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null");
-    return cached && cached.token === user.uid && typeof cached.name === "string" ? cached : { name: user.displayName ?? "\u30D7\u30EC\u30A4\u30E4\u30FC", token: user.uid };
+    return cached && cached.token === user.uid && validName(cached.name) ? cached : null;
   } catch {
-    return { name: user.displayName ?? "\u30D7\u30EC\u30A4\u30E4\u30FC", token: user.uid };
+    return null;
   }
 };
 var signInWithGoogle = async (displayName) => {
   const name4 = cleanName(displayName);
   if (name4.length === 0) throw new Error("\u30E9\u30F3\u30AD\u30F3\u30B0\u306B\u8868\u793A\u3059\u308B\u540D\u524D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  if (name4.length > 24) throw new Error("\u30E9\u30F3\u30AD\u30F3\u30B0\u8868\u793A\u540D\u306F24\u6587\u5B57\u4EE5\u5185\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
   try {
     const credential = await signInWithPopup(auth, provider);
     const user = credential.user;
