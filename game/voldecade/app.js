@@ -214,13 +214,13 @@ class BrowserApp {
                 const name = this.element.querySelector("#online-name")?.value ?? "";
                 this.onlineName = name;
                 await this.runOnlineOperation("login", async () => {
-                    await (0, online_ranking_1.signInOnline)(name);
+                    const account = await (0, online_ranking_1.signInOnline)(name);
                     if (this.resultSubmissionPending && this.session !== null && this.session.run.controller.state.outcome.kind !== "ONGOING") {
                         this.resultSubmissionPending = false;
                         this.route = "result";
                         this.resultPopupOpen = true;
                     }
-                    return "Googleアカウントでログインしました。今回の記録は結果画面から送信できます。";
+                    return `「${account.name}」でログインしました。今回の記録は結果画面から送信できます。`;
                 });
                 return;
             }
@@ -956,7 +956,7 @@ class BrowserApp {
       <p>順位はクリア数、最終クリアまでのターン数、撃墜差の順で決まります。</p>
       <div data-ranking-content>${this.renderOnlineRankingContent()}</div>
       ${current === null ? `<section><h2>ランキングに参加する</h2>
-        <p>Googleアカウントでログインします。ランキングにはGoogleの名前ではなく、ここで入力した表示名が公開されます。</p>
+        <p>初回はランキング表示名を登録します。登録済みのGoogleアカウントでは、最初に登録した名前が使われます。名前は他の人と重複できません。</p>
         <form class="online-auth-form" autocomplete="on">
           <label>ランキング表示名（24文字以内） <input id="online-name" name="nickname" maxlength="24" autocomplete="nickname" value="${escapeHtml(this.onlineName)}"></label>
           <button type="button" class="primary" data-action="online-google-login">${this.onlineOperation === "login" ? onlineProgress.login : "Googleアカウントでログイン"}</button>
@@ -1344,7 +1344,7 @@ if ("serviceWorker" in navigator) {
     });
 }
 
-},{"@voldecade/replay":1,"@voldecade/engine":5,"./game-session":35,"./keyboard":37,"./ai-worker-client":38,"./persistence":40,"./replay-player":41,"./settings":42,"./character-sprites":43,"./sprite-assets":44,"./magic-sprites":46,"./board-layout":45,"./view":47,"./ranking":49,"./online-ranking":50,"./audio":51,"./board-assets":48}],
+},{"@voldecade/replay":1,"@voldecade/engine":5,"./game-session":35,"./keyboard":37,"./ai-worker-client":38,"./persistence":40,"./replay-player":41,"./settings":42,"./character-sprites":43,"./sprite-assets":44,"./magic-sprites":46,"./board-layout":45,"./view":47,"./ranking":49,"./online-ranking":50,"./audio":52,"./board-assets":48}],
 1:[function(module,exports,require){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
@@ -6088,6 +6088,7 @@ exports.recordLocalRanking = recordLocalRanking;
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.persistOnlineAuth = exports.submitOnlineScore = exports.fetchOnlineRanking = exports.getCachedOnlineRanking = exports.logoutOnline = exports.signInOnline = exports.prepareOnline = exports.getOnlineAuth = exports.ONLINE_RANKING_CACHE_MS = exports.ONLINE_TIMEOUT_MS = void 0;
+const ranking_name_1 = require("./ranking-name");
 exports.ONLINE_TIMEOUT_MS = 30000;
 exports.ONLINE_RANKING_CACHE_MS = 30000;
 const AUTH_KEY = "voldecade-online-auth-v2";
@@ -6104,9 +6105,7 @@ const api = async () => {
 const cachedAuth = () => {
     try {
         const value = JSON.parse(localStorage.getItem(AUTH_KEY) ?? "null");
-        return value && typeof value.name === "string" && value.name.length > 0 && value.name.length <= 24
-            && value.name === value.name.replace(/[\u0000-\u001f<>]/g, "").trim()
-            && typeof value.token === "string" ? value : null;
+        return value && (0, ranking_name_1.validRankingName)(value.name) && typeof value.token === "string" ? value : null;
     }
     catch {
         return null;
@@ -6182,8 +6181,22 @@ const persistOnlineAuth = (auth) => {
 };
 exports.persistOnlineAuth = persistOnlineAuth;
 
-},{}],
+},{"./ranking-name":51}],
 51:[function(module,exports,require){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.rankingNameKey = exports.validRankingName = exports.cleanRankingName = void 0;
+const cleanRankingName = (value) => value.replace(/[\u0000-\u001f<>]/g, "").trim();
+exports.cleanRankingName = cleanRankingName;
+const validRankingName = (value) => typeof value === "string"
+    && value === (0, exports.cleanRankingName)(value) && value.length > 0 && value.length <= 24
+    && !value.includes("/") && value !== "." && value !== ".." && !/^__.*__$/.test(value);
+exports.validRankingName = validRankingName;
+const rankingNameKey = (name) => name.toLowerCase();
+exports.rankingNameKey = rankingNameKey;
+
+},{}],
+52:[function(module,exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SoundManager = void 0;

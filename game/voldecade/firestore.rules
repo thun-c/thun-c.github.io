@@ -5,7 +5,14 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid;
     }
     function validDisplayName(name) {
-      return name is string && name.size() > 0 && name.size() <= 24;
+      return name is string && name.size() > 0 && name.size() <= 24
+        && name == name.trim() && name.matches('[^/]+')
+        && name != '.' && name != '..' && !name.matches('__.*__');
+    }
+    function reservedBy(uid, name) {
+      let key = name.lower();
+      let reservation = getAfter(/databases/$(database)/documents/usernames/$(key)).data;
+      return reservation.uid == uid && reservation.displayName == name;
     }
     function validEntry() {
       let data = request.resource.data;
@@ -13,6 +20,8 @@ service cloud.firestore {
         && data.keys().hasOnly(['uid', 'name', 'clearedStages', 'turnsToLastClear', 'killDifference', 'enemyDefeated', 'playerDefeated', 'updatedAt'])
         && data.uid == request.auth.uid
         && validDisplayName(data.name)
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.displayName == data.name
+        && reservedBy(request.auth.uid, data.name)
         && data.clearedStages is int && data.clearedStages >= 0 && data.clearedStages <= 1000
         && (data.turnsToLastClear == null || (data.turnsToLastClear is int && data.turnsToLastClear >= 0))
         && data.killDifference is int
@@ -20,8 +29,20 @@ service cloud.firestore {
         && data.playerDefeated is int && data.playerDefeated >= 0;
     }
     match /users/{uid} {
-      allow read, delete: if signedInAs(uid);
-      allow create, update: if signedInAs(uid) && validDisplayName(request.resource.data.displayName);
+      allow read: if signedInAs(uid);
+      allow create: if signedInAs(uid)
+        && validDisplayName(request.resource.data.displayName)
+        && reservedBy(uid, request.resource.data.displayName);
+    }
+    match /usernames/{key} {
+      allow get: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['uid', 'displayName'])
+        && request.resource.data.keys().hasOnly(['uid', 'displayName'])
+        && request.resource.data.uid == request.auth.uid
+        && validDisplayName(request.resource.data.displayName)
+        && key == request.resource.data.displayName.lower()
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.displayName == request.resource.data.displayName;
     }
     match /leaderboards/{season}/entries/{uid} {
       allow read: if true;

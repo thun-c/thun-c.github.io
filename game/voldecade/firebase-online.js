@@ -20603,6 +20603,11 @@ function serverTimestamp() {
   registerVersion(F, M, "esm2017");
 })();
 
+// src/app/ranking-name.ts
+var cleanRankingName = (value) => value.replace(/[\u0000-\u001f<>]/g, "").trim();
+var validRankingName = (value) => typeof value === "string" && value === cleanRankingName(value) && value.length > 0 && value.length <= 24 && !value.includes("/") && value !== "." && value !== ".." && !/^__.*__$/.test(value);
+var rankingNameKey = (name4) => name4.toLowerCase();
+
 // src/app/firebase-online.ts
 var firebaseConfig = {
   apiKey: "AIzaSyAoXDbwntfDgH1FuWyWZWISoJnw6RG_Xww",
@@ -20628,8 +20633,8 @@ onAuthStateChanged(auth, (user) => {
   resolveAuthReady?.();
   resolveAuthReady = null;
 });
-var cleanName = (value) => value.replace(/[\u0000-\u001f<>]/g, "").trim();
-var validName = (value) => typeof value === "string" && value === cleanName(value) && value.length > 0 && value.length <= 24;
+var AccountNameError = class extends Error {
+};
 var authFor = (user, name4) => {
   const result = { name: name4, token: user.uid };
   localStorage.setItem(CACHE_KEY, JSON.stringify(result));
@@ -20655,27 +20660,38 @@ var getOnlineAuth = () => {
   if (user === null) return null;
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null");
-    return cached && cached.token === user.uid && validName(cached.name) ? cached : null;
+    return cached && cached.token === user.uid && validRankingName(cached.name) ? cached : null;
   } catch {
     return null;
   }
 };
 var signInWithGoogle = async (displayName) => {
-  const name4 = cleanName(displayName);
+  const name4 = cleanRankingName(displayName);
   if (name4.length === 0) throw new Error("\u30E9\u30F3\u30AD\u30F3\u30B0\u306B\u8868\u793A\u3059\u308B\u540D\u524D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
   if (name4.length > 24) throw new Error("\u30E9\u30F3\u30AD\u30F3\u30B0\u8868\u793A\u540D\u306F24\u6587\u5B57\u4EE5\u5185\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  if (!validRankingName(name4)) throw new Error("\u30E9\u30F3\u30AD\u30F3\u30B0\u8868\u793A\u540D\u306B\u300C/\u300D\u3084\u4E88\u7D04\u3055\u308C\u305F\u540D\u524D\u306F\u4F7F\u3048\u307E\u305B\u3093\u3002");
   try {
     const credential = await signInWithPopup(auth, provider);
     const user = credential.user;
     activeUser = user;
-    await runTransaction(db, async (transaction) => {
+    if (getOnlineAuth() === null) localStorage.removeItem(CACHE_KEY);
+    const registeredName = await runTransaction(db, async (transaction) => {
       const profile = doc(db, "users", user.uid);
       const snapshot = await transaction.get(profile);
-      transaction.set(profile, { displayName: name4, updatedAt: serverTimestamp(), ...snapshot.exists() ? {} : { createdAt: serverTimestamp() } });
+      const chosenName = snapshot.exists() ? snapshot.data().displayName : name4;
+      if (!validRankingName(chosenName)) throw new AccountNameError("\u767B\u9332\u6E08\u307F\u306E\u8868\u793A\u540D\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002\u904B\u55B6\u8005\u306B\u9023\u7D61\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      const reservation = doc(db, "usernames", rankingNameKey(chosenName));
+      const reserved = await transaction.get(reservation);
+      if (reserved.exists() && (reserved.data().uid !== user.uid || reserved.data().displayName !== chosenName)) {
+        throw new AccountNameError(snapshot.exists() ? "\u767B\u9332\u6E08\u307F\u306E\u8868\u793A\u540D\u304C\u5225\u306E\u30A2\u30AB\u30A6\u30F3\u30C8\u3068\u91CD\u8907\u3057\u3066\u3044\u307E\u3059\u3002\u904B\u55B6\u8005\u306B\u9023\u7D61\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "\u3053\u306E\u8868\u793A\u540D\u306F\u3059\u3067\u306B\u4F7F\u308F\u308C\u3066\u3044\u307E\u3059\u3002\u5225\u306E\u540D\u524D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      }
+      if (!reserved.exists()) transaction.set(reservation, { uid: user.uid, displayName: chosenName });
+      if (!snapshot.exists()) transaction.set(profile, { displayName: chosenName, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+      return chosenName;
     });
-    return authFor(user, name4);
+    return authFor(user, registeredName);
   } catch (error) {
-    throw new Error(errorText(error));
+    throw error instanceof AccountNameError ? error : new Error(errorText(error));
   }
 };
 var signOutFromGoogle = async () => {
@@ -20693,16 +20709,27 @@ var saveScore = async (score, season = "v1") => {
   if (user === null || account === null) throw new Error("\u5148\u306BGoogle\u30A2\u30AB\u30A6\u30F3\u30C8\u3067\u30ED\u30B0\u30A4\u30F3\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
   const ref = doc(db, "leaderboards", season, "entries", user.uid);
   try {
-    return await runTransaction(db, async (transaction) => {
+    const result = await runTransaction(db, async (transaction) => {
+      const profile = await transaction.get(doc(db, "users", user.uid));
+      const registeredName = profile.exists() ? profile.data().displayName : null;
+      if (!validRankingName(registeredName)) throw new AccountNameError("\u8868\u793A\u540D\u306E\u767B\u9332\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002Google\u30A2\u30AB\u30A6\u30F3\u30C8\u3067\u30ED\u30B0\u30A4\u30F3\u3057\u76F4\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      const reservation = doc(db, "usernames", rankingNameKey(registeredName));
+      const reserved = await transaction.get(reservation);
+      if (reserved.exists() && (reserved.data().uid !== user.uid || reserved.data().displayName !== registeredName)) {
+        throw new AccountNameError("\u767B\u9332\u6E08\u307F\u306E\u8868\u793A\u540D\u304C\u5225\u306E\u30A2\u30AB\u30A6\u30F3\u30C8\u3068\u91CD\u8907\u3057\u3066\u3044\u307E\u3059\u3002\u904B\u55B6\u8005\u306B\u9023\u7D61\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      }
       const previous = await transaction.get(ref);
       const old = previous.exists() ? previous.data() : null;
       const duplicate = old !== null && scoreOrder(old, score) <= 0;
-      if (!duplicate) transaction.set(ref, { ...score, name: account.name, uid: user.uid, updatedAt: serverTimestamp() });
-      else if (old.name !== account.name) transaction.update(ref, { name: account.name, updatedAt: serverTimestamp() });
-      return { duplicate };
+      if (!reserved.exists()) transaction.set(reservation, { uid: user.uid, displayName: registeredName });
+      if (!duplicate) transaction.set(ref, { ...score, name: registeredName, uid: user.uid, updatedAt: serverTimestamp() });
+      else if (old.name !== registeredName) transaction.update(ref, { name: registeredName, updatedAt: serverTimestamp() });
+      return { duplicate, registeredName };
     });
+    if (account.name !== result.registeredName) authFor(user, result.registeredName);
+    return { duplicate: result.duplicate };
   } catch (error) {
-    throw new Error(errorText(error));
+    throw error instanceof AccountNameError ? error : new Error(errorText(error));
   }
 };
 var readLeaderboard = async (season = "v1") => {
