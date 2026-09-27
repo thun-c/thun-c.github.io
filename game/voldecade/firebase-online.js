@@ -5671,6 +5671,9 @@ function onAuthStateChanged(auth2, nextOrObserver, error, completed) {
 function signOut(auth2) {
   return getModularInstance(auth2).signOut();
 }
+async function deleteUser(user) {
+  return getModularInstance(user).delete();
+}
 function startEnrollPhoneMfa(auth2, request) {
   return _performApiRequest(auth2, "POST", "/v2/accounts/mfaEnrollment:start", _addTidIfNecessary(auth2, request));
 }
@@ -7017,6 +7020,20 @@ async function signInWithPopup(auth2, provider2, resolver) {
   _assertInstanceOf(auth2, provider2, FederatedAuthProvider);
   const resolverInternal = _withDefaultResolver(authInternal, resolver);
   const action = new PopupOperation(authInternal, "signInViaPopup", provider2, resolverInternal);
+  return action.executeNotNull();
+}
+async function reauthenticateWithPopup(user, provider2, resolver) {
+  const userInternal = getModularInstance(user);
+  if (_isFirebaseServerApp(userInternal.auth.app)) {
+    return Promise.reject(_createError(
+      userInternal.auth,
+      "operation-not-supported-in-this-environment"
+      /* AuthErrorCode.OPERATION_NOT_SUPPORTED */
+    ));
+  }
+  _assertInstanceOf(userInternal.auth, provider2, FederatedAuthProvider);
+  const resolverInternal = _withDefaultResolver(userInternal.auth, resolver);
+  const action = new PopupOperation(userInternal.auth, "reauthViaPopup", provider2, resolverInternal, userInternal);
   return action.executeNotNull();
 }
 var PopupOperation = class _PopupOperation extends AbstractPopupRedirectOperation {
@@ -20018,6 +20035,10 @@ var QueryFieldFilterConstraint = class _QueryFieldFilterConstraint extends Query
     return n;
   }
 };
+function where(e, t, n) {
+  const r = t, i = __PRIVATE_fieldPathFromArgument("where", e);
+  return QueryFieldFilterConstraint._create(i, r, n);
+}
 var QueryCompositeFilterConstraint = class _QueryCompositeFilterConstraint extends AppliableConstraint {
   /**
    * @internal
@@ -20498,6 +20519,13 @@ function getDocs(e) {
   const t = __PRIVATE_cast(e.firestore, Firestore), n = ensureFirestoreConfigured(t), r = new __PRIVATE_ExpUserDataWriter(t);
   return __PRIVATE_validateHasExplicitOrderByForLimitToLast(e._query), __PRIVATE_firestoreClientGetDocumentsViaSnapshotListener(n, e._query).then(((n2) => new QuerySnapshot(t, r, e, n2)));
 }
+function getDocsFromServer(e) {
+  e = __PRIVATE_cast(e, Query);
+  const t = __PRIVATE_cast(e.firestore, Firestore), n = ensureFirestoreConfigured(t), r = new __PRIVATE_ExpUserDataWriter(t);
+  return __PRIVATE_firestoreClientGetDocumentsViaSnapshotListener(n, e._query, {
+    source: "server"
+  }).then(((n2) => new QuerySnapshot(t, r, e, n2)));
+}
 var Pn = {
   maxAttempts: 5
 };
@@ -20608,6 +20636,28 @@ var cleanRankingName = (value) => value.replace(/[\u0000-\u001f<>]/g, "").trim()
 var validRankingName = (value) => typeof value === "string" && value === cleanRankingName(value) && value.length > 0 && value.length <= 24 && !value.includes("/") && value !== "." && value !== ".." && !/^__.*__$/.test(value);
 var rankingNameKey = (name4) => name4.toLowerCase();
 
+// src/app/online-account-deletion.ts
+var KEY = "voldecade-online-deletion-pending-v1";
+var isAccountDeletionPending = (uid) => {
+  try {
+    return localStorage.getItem(KEY) === uid;
+  } catch {
+    return false;
+  }
+};
+var markAccountDeletionPending = (uid) => {
+  try {
+    localStorage.setItem(KEY, uid);
+  } catch {
+  }
+};
+var clearAccountDeletionPending = () => {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+  }
+};
+
 // src/app/firebase-online.ts
 var firebaseConfig = {
   apiKey: "AIzaSyAoXDbwntfDgH1FuWyWZWISoJnw6RG_Xww",
@@ -20622,6 +20672,7 @@ var auth = getAuth(app);
 var db = getFirestore(app);
 var CACHE_KEY = "voldecade-online-auth-v2";
 var provider = new GoogleAuthProvider();
+var rankingSeasons = ["v1"];
 var activeUser = auth.currentUser;
 var resolveAuthReady = null;
 var authReady = new Promise((resolve) => {
@@ -20652,6 +20703,8 @@ var errorText = (error) => {
   if (code.includes("failed-precondition")) return "\u30E9\u30F3\u30AD\u30F3\u30B0\u7528\u306EFirestore\u30A4\u30F3\u30C7\u30C3\u30AF\u30B9\u304C\u672A\u4F5C\u6210\u3067\u3059\u3002\u4ED8\u5C5E\u306Efirestore.indexes.json\u3092Firebase\u3078\u53CD\u6620\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
   if (code.includes("unauthorized-domain")) return "\u3053\u306E\u30DA\u30FC\u30B8\u306E\u30C9\u30E1\u30A4\u30F3\u304CFirebase\u3067\u8A31\u53EF\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002Firebase Authentication\u306E\u627F\u8A8D\u6E08\u307F\u30C9\u30E1\u30A4\u30F3\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
   if (code.includes("network-request-failed")) return "\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF\u306B\u63A5\u7D9A\u3067\u304D\u307E\u305B\u3093\u3002\u63A5\u7D9A\u3092\u78BA\u8A8D\u3057\u3066\u3082\u3046\u4E00\u5EA6\u304A\u8A66\u3057\u304F\u3060\u3055\u3044\u3002";
+  if (code.includes("user-mismatch")) return "\u5225\u306EGoogle\u30A2\u30AB\u30A6\u30F3\u30C8\u304C\u9078\u629E\u3055\u308C\u307E\u3057\u305F\u3002\u524A\u9664\u3059\u308B\u30A2\u30AB\u30A6\u30F3\u30C8\u3092\u9078\u3073\u76F4\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+  if (code.includes("requires-recent-login")) return "\u672C\u4EBA\u78BA\u8A8D\u306E\u6709\u52B9\u671F\u9650\u304C\u5207\u308C\u307E\u3057\u305F\u3002\u3082\u3046\u4E00\u5EA6Google\u30A2\u30AB\u30A6\u30F3\u30C8\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
   if (code.includes("permission-denied")) return "\u30E9\u30F3\u30AD\u30F3\u30B0\u306E\u64CD\u4F5C\u304C\u8A31\u53EF\u3055\u308C\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u904B\u55B6\u8005\u306B\u64CD\u4F5C\u5185\u5BB9\u3068\u8A18\u9332\u306E\u30AF\u30EA\u30A2\u6570\u3092\u304A\u77E5\u3089\u305B\u304F\u3060\u3055\u3044\u3002";
   return code.startsWith("auth/") ? "Google\u30ED\u30B0\u30A4\u30F3\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002Firebase\u306E\u627F\u8A8D\u6E08\u307F\u30C9\u30E1\u30A4\u30F3\u3001Google\u30ED\u30B0\u30A4\u30F3\u8A2D\u5B9A\u3001Web\u30A2\u30D7\u30EA\u69CB\u6210\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "Firebase\u3068\u306E\u901A\u4FE1\u306B\u5931\u6557\u3057\u307E\u3057\u305F\u3002Firestore\u30EB\u30FC\u30EB\u3068\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF\u63A5\u7D9A\u3092\u78BA\u8A8D\u3057\u3066\u3001\u3082\u3046\u4E00\u5EA6\u304A\u8A66\u3057\u304F\u3060\u3055\u3044\u3002";
 };
@@ -20665,29 +20718,62 @@ var getOnlineAuth = () => {
     return null;
   }
 };
-var signInWithGoogle = async (displayName) => {
-  const name4 = cleanRankingName(displayName);
-  if (name4.length === 0) throw new Error("\u30E9\u30F3\u30AD\u30F3\u30B0\u306B\u8868\u793A\u3059\u308B\u540D\u524D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-  if (name4.length > 24) throw new Error("\u30E9\u30F3\u30AD\u30F3\u30B0\u8868\u793A\u540D\u306F24\u6587\u5B57\u4EE5\u5185\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-  if (!validRankingName(name4)) throw new Error("\u30E9\u30F3\u30AD\u30F3\u30B0\u8868\u793A\u540D\u306B\u300C/\u300D\u3084\u4E88\u7D04\u3055\u308C\u305F\u540D\u524D\u306F\u4F7F\u3048\u307E\u305B\u3093\u3002");
+var registeredNameFor = async (transaction, user) => {
+  const snapshot = await transaction.get(doc(db, "users", user.uid));
+  if (!snapshot.exists()) return null;
+  const name4 = snapshot.data().displayName;
+  if (!validRankingName(name4)) throw new AccountNameError("\u767B\u9332\u6E08\u307F\u306E\u8868\u793A\u540D\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002\u904B\u55B6\u8005\u306B\u9023\u7D61\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  const reserved = await transaction.get(doc(db, "usernames", rankingNameKey(name4)));
+  if (!reserved.exists()) throw new AccountNameError("\u767B\u9332\u6E08\u307F\u306E\u8868\u793A\u540D\u306E\u79FB\u884C\u304C\u5B8C\u4E86\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u904B\u55B6\u8005\u306B\u9023\u7D61\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  if (reserved.data().uid !== user.uid || reserved.data().displayName !== name4) {
+    throw new AccountNameError("\u767B\u9332\u6E08\u307F\u306E\u8868\u793A\u540D\u304C\u5225\u306E\u30A2\u30AB\u30A6\u30F3\u30C8\u3068\u91CD\u8907\u3057\u3066\u3044\u307E\u3059\u3002\u904B\u55B6\u8005\u306B\u9023\u7D61\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  }
+  return name4;
+};
+var signInWithGoogle = async () => {
   try {
     const credential = await signInWithPopup(auth, provider);
     const user = credential.user;
     activeUser = user;
-    if (getOnlineAuth() === null) localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(CACHE_KEY);
+    if (isAccountDeletionPending(user.uid)) return { kind: "deletion-pending", email: user.email, uid: user.uid };
     const registeredName = await runTransaction(db, async (transaction) => {
-      const profile = doc(db, "users", user.uid);
-      const snapshot = await transaction.get(profile);
-      const chosenName = snapshot.exists() ? snapshot.data().displayName : name4;
-      if (!validRankingName(chosenName)) throw new AccountNameError("\u767B\u9332\u6E08\u307F\u306E\u8868\u793A\u540D\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002\u904B\u55B6\u8005\u306B\u9023\u7D61\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
-      const reservation = doc(db, "usernames", rankingNameKey(chosenName));
-      const reserved = await transaction.get(reservation);
-      if (reserved.exists() && (reserved.data().uid !== user.uid || reserved.data().displayName !== chosenName)) {
-        throw new AccountNameError(snapshot.exists() ? "\u767B\u9332\u6E08\u307F\u306E\u8868\u793A\u540D\u304C\u5225\u306E\u30A2\u30AB\u30A6\u30F3\u30C8\u3068\u91CD\u8907\u3057\u3066\u3044\u307E\u3059\u3002\u904B\u55B6\u8005\u306B\u9023\u7D61\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "\u3053\u306E\u8868\u793A\u540D\u306F\u3059\u3067\u306B\u4F7F\u308F\u308C\u3066\u3044\u307E\u3059\u3002\u5225\u306E\u540D\u524D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      const name4 = await registeredNameFor(transaction, user);
+      if (name4 !== null) return name4;
+      const migration = await transaction.get(doc(db, "config", "usernameMigration"));
+      if (migration.data()?.ready !== true) {
+        throw new AccountNameError("\u8868\u793A\u540D\u306E\u79FB\u884C\u4F5C\u696D\u4E2D\u306E\u305F\u3081\u3001\u65B0\u898F\u767B\u9332\u3092\u4E00\u6642\u505C\u6B62\u3057\u3066\u3044\u307E\u3059\u3002\u3057\u3070\u3089\u304F\u3057\u3066\u304B\u3089\u304A\u8A66\u3057\u304F\u3060\u3055\u3044\u3002");
       }
-      if (!reserved.exists()) transaction.set(reservation, { uid: user.uid, displayName: chosenName });
-      if (!snapshot.exists()) transaction.set(profile, { displayName: chosenName, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-      return chosenName;
+      return null;
+    });
+    return registeredName === null ? { kind: "needs-registration", email: user.email, uid: user.uid } : { kind: "registered", account: authFor(user, registeredName) };
+  } catch (error) {
+    throw error instanceof AccountNameError ? error : new Error(errorText(error));
+  }
+};
+var registerDisplayName = async (displayName) => {
+  const name4 = cleanRankingName(displayName);
+  if (name4.length === 0) throw new Error("\u30E9\u30F3\u30AD\u30F3\u30B0\u306B\u8868\u793A\u3059\u308B\u540D\u524D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  if (name4.length > 24) throw new Error("\u30E9\u30F3\u30AD\u30F3\u30B0\u8868\u793A\u540D\u306F24\u6587\u5B57\u4EE5\u5185\u306B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  if (!validRankingName(name4)) throw new Error("\u30E9\u30F3\u30AD\u30F3\u30B0\u8868\u793A\u540D\u306B\u300C/\u300D\u3084\u4E88\u7D04\u3055\u308C\u305F\u540D\u524D\u306F\u4F7F\u3048\u307E\u305B\u3093\u3002");
+  await authReady;
+  const user = activeUser;
+  if (user === null) throw new Error("\u5148\u306BGoogle\u30A2\u30AB\u30A6\u30F3\u30C8\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  if (isAccountDeletionPending(user.uid)) throw new Error("\u30A2\u30AB\u30A6\u30F3\u30C8\u306E\u524A\u9664\u51E6\u7406\u4E2D\u3067\u3059\u3002\u5148\u306B\u524A\u9664\u3092\u518D\u8A66\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  try {
+    const registeredName = await runTransaction(db, async (transaction) => {
+      const existingName = await registeredNameFor(transaction, user);
+      if (existingName !== null) return existingName;
+      const migration = await transaction.get(doc(db, "config", "usernameMigration"));
+      if (migration.data()?.ready !== true) {
+        throw new AccountNameError("\u8868\u793A\u540D\u306E\u79FB\u884C\u4F5C\u696D\u4E2D\u306E\u305F\u3081\u3001\u65B0\u898F\u767B\u9332\u3092\u4E00\u6642\u505C\u6B62\u3057\u3066\u3044\u307E\u3059\u3002\u3057\u3070\u3089\u304F\u3057\u3066\u304B\u3089\u304A\u8A66\u3057\u304F\u3060\u3055\u3044\u3002");
+      }
+      const reservation = doc(db, "usernames", rankingNameKey(name4));
+      const reserved = await transaction.get(reservation);
+      if (reserved.exists()) throw new AccountNameError("\u3053\u306E\u8868\u793A\u540D\u306F\u3059\u3067\u306B\u4F7F\u308F\u308C\u3066\u3044\u307E\u3059\u3002\u5225\u306E\u540D\u524D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      transaction.set(reservation, { uid: user.uid, displayName: name4 });
+      transaction.set(doc(db, "users", user.uid), { displayName: name4, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+      return name4;
     });
     return authFor(user, registeredName);
   } catch (error) {
@@ -20702,11 +20788,53 @@ var signOutFromGoogle = async () => {
     throw new Error(errorText(error));
   }
 };
+var deleteOnlineAccount = async (expectedUid) => {
+  await authReady;
+  const user = activeUser;
+  if (user === null) throw new Error("Google\u30A2\u30AB\u30A6\u30F3\u30C8\u3067\u30ED\u30B0\u30A4\u30F3\u3057\u76F4\u3057\u3066\u304B\u3089\u524A\u9664\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  if (user.uid !== expectedUid) throw new Error("\u9078\u629E\u4E2D\u306EGoogle\u30A2\u30AB\u30A6\u30F3\u30C8\u304C\u5909\u308F\u308A\u307E\u3057\u305F\u3002\u30ED\u30B0\u30A4\u30F3\u3057\u76F4\u3057\u3066\u304B\u3089\u524A\u9664\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  try {
+    await reauthenticateWithPopup(user, provider);
+  } catch (error) {
+    throw new Error(errorText(error));
+  }
+  markAccountDeletionPending(user.uid);
+  try {
+    const ownedNames = await getDocsFromServer(query(collection(db, "usernames"), where("uid", "==", user.uid)));
+    await runTransaction(db, async (transaction) => {
+      const profileRef = doc(db, "users", user.uid);
+      const profile = await transaction.get(profileRef);
+      const reservations = await Promise.all(ownedNames.docs.map((snapshot) => transaction.get(snapshot.ref)));
+      const scoreRefs = rankingSeasons.map((season) => doc(db, "leaderboards", season, "entries", user.uid));
+      const scores = await Promise.all(scoreRefs.map((ref) => transaction.get(ref)));
+      reservations.forEach((reservation, index) => {
+        if (reservation.exists() && reservation.data().uid === user.uid) transaction.delete(ownedNames.docs[index].ref);
+      });
+      if (profile.exists()) transaction.delete(profileRef);
+      scores.forEach((score, index) => {
+        if (score.exists()) transaction.delete(scoreRefs[index]);
+      });
+    });
+  } catch (error) {
+    const code = error !== null && typeof error === "object" && "code" in error ? String(error.code) : "";
+    const detail = code.includes("permission-denied") ? "Firestore\u306E\u30A2\u30AB\u30A6\u30F3\u30C8\u524A\u9664\u30EB\u30FC\u30EB\u304C\u672A\u53CD\u6620\u306E\u53EF\u80FD\u6027\u304C\u3042\u308A\u307E\u3059\u3002\u904B\u55B6\u8005\u306B\u304A\u77E5\u3089\u305B\u304F\u3060\u3055\u3044\u3002" : errorText(error);
+    throw new Error(`\u30AA\u30F3\u30E9\u30A4\u30F3\u8A18\u9332\u306E\u524A\u9664\u3092\u5B8C\u4E86\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u524A\u9664\u3092\u518D\u8A66\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u8A73\u7D30\uFF1A${detail}`);
+  }
+  try {
+    await deleteUser(user);
+  } catch (error) {
+    throw new Error(`\u30AA\u30F3\u30E9\u30A4\u30F3\u8A18\u9332\u306F\u524A\u9664\u3055\u308C\u307E\u3057\u305F\u304C\u3001\u8A8D\u8A3C\u30A2\u30AB\u30A6\u30F3\u30C8\u306E\u524A\u9664\u304C\u5B8C\u4E86\u3057\u3066\u3044\u307E\u305B\u3093\u3002Google\u30A2\u30AB\u30A6\u30F3\u30C8\u3092\u78BA\u8A8D\u3057\u3001\u524A\u9664\u3092\u518D\u8A66\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u8A73\u7D30\uFF1A${errorText(error)}`);
+  }
+  activeUser = null;
+  localStorage.removeItem(CACHE_KEY);
+  clearAccountDeletionPending();
+};
 var saveScore = async (score, season = "v1") => {
   await authReady;
   const user = activeUser;
   const account = getOnlineAuth();
   if (user === null || account === null) throw new Error("\u5148\u306BGoogle\u30A2\u30AB\u30A6\u30F3\u30C8\u3067\u30ED\u30B0\u30A4\u30F3\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+  if (isAccountDeletionPending(user.uid)) throw new Error("\u30A2\u30AB\u30A6\u30F3\u30C8\u306E\u524A\u9664\u51E6\u7406\u4E2D\u3067\u3059\u3002\u5148\u306B\u524A\u9664\u3092\u518D\u8A66\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
   const ref = doc(db, "leaderboards", season, "entries", user.uid);
   try {
     const result = await runTransaction(db, async (transaction) => {
@@ -20715,13 +20843,13 @@ var saveScore = async (score, season = "v1") => {
       if (!validRankingName(registeredName)) throw new AccountNameError("\u8868\u793A\u540D\u306E\u767B\u9332\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3002Google\u30A2\u30AB\u30A6\u30F3\u30C8\u3067\u30ED\u30B0\u30A4\u30F3\u3057\u76F4\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
       const reservation = doc(db, "usernames", rankingNameKey(registeredName));
       const reserved = await transaction.get(reservation);
+      if (!reserved.exists()) throw new AccountNameError("\u767B\u9332\u6E08\u307F\u306E\u8868\u793A\u540D\u306E\u79FB\u884C\u304C\u5B8C\u4E86\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u904B\u55B6\u8005\u306B\u9023\u7D61\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
       if (reserved.exists() && (reserved.data().uid !== user.uid || reserved.data().displayName !== registeredName)) {
         throw new AccountNameError("\u767B\u9332\u6E08\u307F\u306E\u8868\u793A\u540D\u304C\u5225\u306E\u30A2\u30AB\u30A6\u30F3\u30C8\u3068\u91CD\u8907\u3057\u3066\u3044\u307E\u3059\u3002\u904B\u55B6\u8005\u306B\u9023\u7D61\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
       }
       const previous = await transaction.get(ref);
       const old = previous.exists() ? previous.data() : null;
       const duplicate = old !== null && scoreOrder(old, score) <= 0;
-      if (!reserved.exists()) transaction.set(reservation, { uid: user.uid, displayName: registeredName });
       if (!duplicate) transaction.set(ref, { ...score, name: registeredName, uid: user.uid, updatedAt: serverTimestamp() });
       else if (old.name !== registeredName) transaction.update(ref, { name: registeredName, updatedAt: serverTimestamp() });
       return { duplicate, registeredName };
@@ -20744,14 +20872,18 @@ var readLeaderboard = async (season = "v1") => {
 var firebase_online_default = {
   getOnlineAuth,
   signInWithGoogle,
+  registerDisplayName,
   logoutOnline: signOutFromGoogle,
+  deleteOnlineAccount,
   submitOnlineScore: saveScore,
   fetchOnlineRanking: readLeaderboard
 };
 export {
   firebase_online_default as default,
+  deleteOnlineAccount,
   getOnlineAuth,
   readLeaderboard,
+  registerDisplayName,
   saveScore,
   signInWithGoogle,
   signOutFromGoogle

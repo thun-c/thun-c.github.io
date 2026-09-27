@@ -21,7 +21,9 @@ const board_assets_1 = require("./board-assets");
 const onlineProgress = {
     ranking: "ランキングを読み込み中…",
     login: "ログイン中…",
+    register: "表示名を登録中…",
     submit: "スコアを送信中…",
+    "delete-account": "アカウントを削除中…",
 };
 const REPLAY_VIDEO_FPS = 30;
 const REPLAY_VIDEO_TURN_MS = 500;
@@ -81,6 +83,12 @@ class BrowserApp {
         this.onlineRankingRefreshing = false;
         this.onlineRankingError = null;
         this.onlineName = "";
+        this.onlineRegistrationPending = false;
+        this.onlinePendingEmail = null;
+        this.onlinePendingUid = null;
+        this.onlineDeleteName = null;
+        this.onlineDeleteUid = null;
+        this.onlineDeletionRetry = false;
         this.onlineSlow = false;
         element.addEventListener("click", (event) => { void this.onClick(event); });
         document.addEventListener("keydown", (event) => this.onKeyDown(event));
@@ -210,18 +218,51 @@ class BrowserApp {
                 });
                 return;
             }
-            else if (action === "online-google-login") {
+            else if (action === "online-google-continue") {
+                await this.runOnlineOperation("login", async () => {
+                    const result = await (0, online_ranking_1.signInOnline)();
+                    if (result.kind === "deletion-pending") {
+                        this.onlineRegistrationPending = false;
+                        this.onlinePendingEmail = result.email;
+                        this.onlinePendingUid = result.uid;
+                        this.onlineDeleteName = result.email;
+                        this.onlineDeleteUid = result.uid;
+                        this.onlineDeletionRetry = true;
+                        this.route = "delete-account";
+                        return "前回のアカウント削除が完了していません。削除を再試行してください。";
+                    }
+                    if (result.kind === "needs-registration") {
+                        this.onlineRegistrationPending = true;
+                        this.onlinePendingEmail = result.email;
+                        this.onlinePendingUid = result.uid;
+                        return "このGoogleアカウントはランキング未登録です。表示名を登録してください。";
+                    }
+                    this.onlineRegistrationPending = false;
+                    this.onlinePendingEmail = null;
+                    this.onlinePendingUid = null;
+                    return this.finishOnlineLogin(result.account.name);
+                });
+                return;
+            }
+            else if (action === "online-register-name") {
                 const name = this.element.querySelector("#online-name")?.value ?? "";
                 this.onlineName = name;
-                await this.runOnlineOperation("login", async () => {
-                    const account = await (0, online_ranking_1.signInOnline)(name);
-                    if (this.resultSubmissionPending && this.session !== null && this.session.run.controller.state.outcome.kind !== "ONGOING") {
-                        this.resultSubmissionPending = false;
-                        this.route = "result";
-                        this.resultPopupOpen = true;
-                    }
-                    return `「${account.name}」でログインしました。今回の記録は結果画面から送信できます。`;
+                await this.runOnlineOperation("register", async () => {
+                    const account = await (0, online_ranking_1.registerOnlineName)(name);
+                    this.onlineRegistrationPending = false;
+                    this.onlinePendingEmail = null;
+                    this.onlinePendingUid = null;
+                    return this.finishOnlineLogin(account.name);
                 });
+                return;
+            }
+            else if (action === "online-registration-cancel") {
+                this.onlineRegistrationPending = false;
+                this.onlinePendingEmail = null;
+                this.onlinePendingUid = null;
+                this.onlineNotice = null;
+                this.onlineName = "";
+                this.render();
                 return;
             }
             else if (action === "online-refresh") {
@@ -230,7 +271,45 @@ class BrowserApp {
             }
             else if (action === "online-logout") {
                 (0, online_ranking_1.logoutOnline)();
+                this.onlineRegistrationPending = false;
+                this.onlinePendingEmail = null;
+                this.onlinePendingUid = null;
+                this.onlineDeletionRetry = false;
                 this.onlineNotice = { kind: "success", message: "ログアウトしました。" };
+            }
+            else if (action === "online-delete-account") {
+                this.onlineDeleteName = (0, online_ranking_1.getOnlineAuth)()?.name ?? this.onlinePendingEmail;
+                this.onlineDeleteUid = (0, online_ranking_1.getOnlineAuth)()?.token ?? this.onlinePendingUid;
+                this.onlineDeletionRetry = (0, online_ranking_1.isOnlineAccountDeletionPending)();
+                this.route = "delete-account";
+            }
+            else if (action === "confirm-delete-account" && this.route === "delete-account") {
+                const deleteUid = this.onlineDeleteUid;
+                if (deleteUid === null)
+                    throw new Error("削除するアカウントを確認できません。Googleアカウントでログインし直してください。");
+                const deleted = await this.runOnlineOperation("delete-account", async () => {
+                    await (0, online_ranking_1.deleteOnlineAccount)(deleteUid);
+                    this.onlineEntries = null;
+                    this.onlineRankingUpdatedAt = null;
+                    this.onlineRankingError = null;
+                    this.onlineRegistrationPending = false;
+                    this.onlinePendingEmail = null;
+                    this.onlinePendingUid = null;
+                    this.onlineDeleteName = null;
+                    this.onlineDeleteUid = null;
+                    this.onlineDeletionRetry = false;
+                    this.resultSubmissionPending = false;
+                    this.submittedResultAccounts.clear();
+                    this.route = "ranking";
+                    return "アカウントとオンラインのランキング記録を削除しました。";
+                });
+                if (!deleted) {
+                    this.onlineDeletionRetry = this.onlineDeletionRetry || (0, online_ranking_1.isOnlineAccountDeletionPending)();
+                    this.onlineEntries = null;
+                    this.onlineRankingUpdatedAt = null;
+                    this.render();
+                }
+                return;
             }
             else if (action === "mode-toggle" && this.session !== null) {
                 this.session = (0, game_session_1.changeControlMode)(this.session, this.session.input.control.mode === "GROUP" ? "INDIVIDUAL" : "GROUP");
@@ -956,21 +1035,42 @@ class BrowserApp {
       <p>順位はクリア数、最終クリアまでのターン数、撃墜差の順で決まります。</p>
       <div data-ranking-content>${this.renderOnlineRankingContent()}</div>
       ${current === null ? `<section><h2>ランキングに参加する</h2>
-        <p>初回はランキング表示名を登録します。登録済みのGoogleアカウントでは、最初に登録した名前が使われます。名前は他の人と重複できません。</p>
-        <form class="online-auth-form" autocomplete="on">
-          <label>ランキング表示名（24文字以内） <input id="online-name" name="nickname" maxlength="24" autocomplete="nickname" value="${escapeHtml(this.onlineName)}"></label>
-          <button type="button" class="primary" data-action="online-google-login">${this.onlineOperation === "login" ? onlineProgress.login : "Googleアカウントでログイン"}</button>
-        </form>
-      </section>` : `<section><p>${escapeHtml(current.name)}でログイン中。ランキングに表示される名前は入力した表示名です。</p>
+        ${this.onlineRegistrationPending ? `<p>このGoogleアカウントはランキング未登録です。表示名を決めてください。登録後は変更できず、他の人と同じ名前は使えません。</p>
+          ${this.onlinePendingEmail === null ? "" : `<p>選択中のGoogleアカウント：${escapeHtml(this.onlinePendingEmail)}</p>`}
+          <form class="online-auth-form" autocomplete="on">
+            <label>ランキング表示名（24文字以内） <input id="online-name" name="nickname" maxlength="24" autocomplete="nickname" value="${escapeHtml(this.onlineName)}"></label>
+            <button type="button" class="primary" data-action="online-register-name">${this.onlineOperation === "register" ? onlineProgress.register : "表示名を登録する"}</button>
+          </form>
+          <button data-action="online-registration-cancel">登録をやめる</button>
+          <button data-action="online-delete-account">このアカウントを削除</button>`
+            : `<p>Googleアカウントを選択してください。登録済みならそのままログインし、初めての場合だけ表示名を登録します。</p>
+          <button class="primary" data-action="online-google-continue">${this.onlineOperation === "login" ? onlineProgress.login : "Googleアカウントで続ける"}</button>`}
+      </section>` : `<section><p>${escapeHtml(current.name)}でログイン中。このGoogleアカウントのランキング表示名は固定されています。</p>
         <button data-action="online-logout">ログアウト</button>
+        <button data-action="online-delete-account">${(0, online_ranking_1.isOnlineAccountDeletionPending)() ? "アカウント削除を再開" : "アカウントを削除"}</button>
       </section>`}
+    </main>`;
+    }
+    renderOnlineAccountDeletion() {
+        const pending = this.onlineDeletionRetry || (0, online_ranking_1.isOnlineAccountDeletionPending)();
+        const name = this.onlineDeleteName === null ? "選択中のGoogleアカウント" : `「${escapeHtml(this.onlineDeleteName)}」`;
+        return `<main class="screen text-screen account-delete-screen"><button data-route="ranking">← ランキングに戻る</button>
+      <h1>アカウントの削除</h1>${this.renderOnlineNotice()}${this.warning === null ? "" : `<p class="warning" role="alert">${escapeHtml(this.warning)}</p>`}
+      <p>${name}のVOLDECADEアカウントを${pending ? "削除し終えます" : "削除します"}。</p>
+      <ul><li>Googleログイン用のFirebaseアカウント、表示名とその予約、オンラインランキングの記録を削除します。</li>
+      <li>表示名は他の人が登録できるようになります。削除したランキング記録は復元できません。</li>
+      <li>この端末のリプレイ、ローカルランキング、音量設定は残ります。Googleアカウント自体や投稿済みのX・書き出した動画は削除されません。</li></ul>
+      <p>続けると、本人確認のためGoogleアカウントの選択画面が開きます。</p>
+      <div class="account-delete-actions"><button class="danger" data-action="confirm-delete-account">${pending ? "削除を再試行" : "アカウントを削除する"}</button>
+      <button data-route="ranking">キャンセル</button></div>
     </main>`;
     }
     renderOnlineRankingContent() {
         const rows = this.onlineEntries?.map((entry, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(entry.name)}</td><td>${entry.clearedStages}</td><td>${entry.turnsToLastClear ?? "—"}</td><td>${entry.killDifference >= 0 ? "+" : ""}${entry.killDifference}</td></tr>`).join("");
         const loading = this.onlineRankingRefreshing || this.onlineOperation === "ranking";
         const empty = this.onlineEntries !== null ? "まだ記録がありません" : loading
-            ? "ランキングを取得しています。" : "ランキングを取得できませんでした。再読み込みしてください。";
+            ? "ランキングを取得しています。" : this.onlineRankingError === null
+            ? "ランキングを表示するには再読み込みしてください。" : "ランキングを取得できませんでした。再読み込みしてください。";
         const updated = this.onlineRankingUpdatedAt === null ? "" : `最終更新：${new Date(this.onlineRankingUpdatedAt).toLocaleString("ja-JP")}`;
         return `<button data-action="online-refresh" ${loading ? "disabled" : ""}>${loading ? onlineProgress.ranking : "ランキングを再読み込み"}</button>
       <p role="status">${updated}${this.onlineRankingRefreshing ? "　更新中です。前回の順位を表示しています。" : ""}</p>
@@ -978,7 +1078,7 @@ class BrowserApp {
       <table><thead><tr><th>順位</th><th>名前</th><th>クリア数</th><th>ターン</th><th>撃墜差</th></tr></thead><tbody>${rows || `<tr><td colspan="5">${empty}</td></tr>`}</tbody></table>`;
     }
     isOnlineRequestAction(action) {
-        return action !== undefined && ["online-refresh", "online-google-login", "submit-online"].includes(action);
+        return action !== undefined && ["online-refresh", "online-google-continue", "online-register-name", "online-delete-account", "confirm-delete-account", "submit-online"].includes(action);
     }
     updateOnlineRankingControls() {
         if (this.onlineOperation !== null || this.replayExporting || this.replayDeleting)
@@ -1141,6 +1241,19 @@ class BrowserApp {
     applySettings() {
         this.audio.setVolume(this.settings.volume);
     }
+    finishOnlineLogin(name) {
+        const returnToResult = this.resultSubmissionPending && this.session !== null
+            && this.session.run.controller.state.outcome.kind !== "ONGOING";
+        this.resultSubmissionPending = false;
+        this.onlineName = "";
+        if (returnToResult) {
+            this.route = "result";
+            this.resultPopupOpen = true;
+        }
+        return returnToResult
+            ? `「${name}」でログインしました。今回の記録は結果画面から送信できます。`
+            : `「${name}」でログインしました。`;
+    }
     async loadOnlineRanking(successMessage = "ランキングを読み込みました。", fresh = false) {
         if (this.onlineRankingRefreshing) {
             this.render();
@@ -1201,7 +1314,7 @@ class BrowserApp {
     /** One owner for start, completion and failure; drawing never starts a request. */
     async runOnlineOperation(operation, task) {
         if (this.onlineOperation !== null)
-            return;
+            return false;
         this.onlineOperation = operation;
         this.onlineNotice = null;
         this.onlineSlow = false;
@@ -1215,9 +1328,11 @@ class BrowserApp {
         }, 8000);
         try {
             this.onlineNotice = { kind: "success", message: await task() };
+            return true;
         }
         catch (error) {
             this.onlineNotice = { kind: "error", message: error instanceof Error ? error.message : "通信に失敗しました。時間をおいてもう一度お試しください。" };
+            return false;
         }
         finally {
             window.clearTimeout(slowTimer);
@@ -1228,7 +1343,9 @@ class BrowserApp {
         }
     }
     onlineWaitHint() {
-        return this.onlineSlow ? `応答に時間がかかっています。このままお待ちください。${online_ranking_1.ONLINE_TIMEOUT_MS / 1000}秒で応答がなければ操作できる状態に戻ります。`
+        return this.onlineSlow ? this.onlineOperation === "delete-account"
+            ? "削除処理に時間がかかっています。このままお待ちください。通信が切れた場合は、再度ログインして削除を再試行できます。"
+            : `応答に時間がかかっています。このままお待ちください。${online_ranking_1.ONLINE_TIMEOUT_MS / 1000}秒で応答がなければ操作できる状態に戻ります。`
             : "サーバーからの応答を待っています。しばらくお待ちください。";
     }
     renderOnlineBusy() {
@@ -1273,6 +1390,8 @@ class BrowserApp {
             this.element.innerHTML = this.renderCredits();
         else if (this.route === "delete-replay")
             this.element.innerHTML = this.renderReplayDeleteConfirmation();
+        else if (this.route === "delete-account")
+            this.element.innerHTML = this.renderOnlineAccountDeletion();
         else if (this.route === "settings")
             this.element.innerHTML = this.renderSettings();
         else if (this.route === "result")
@@ -1344,7 +1463,7 @@ if ("serviceWorker" in navigator) {
     });
 }
 
-},{"@voldecade/replay":1,"@voldecade/engine":5,"./game-session":35,"./keyboard":37,"./ai-worker-client":38,"./persistence":40,"./replay-player":41,"./settings":42,"./character-sprites":43,"./sprite-assets":44,"./magic-sprites":46,"./board-layout":45,"./view":47,"./ranking":49,"./online-ranking":50,"./audio":52,"./board-assets":48}],
+},{"@voldecade/replay":1,"@voldecade/engine":5,"./game-session":35,"./keyboard":37,"./ai-worker-client":38,"./persistence":40,"./replay-player":41,"./settings":42,"./character-sprites":43,"./sprite-assets":44,"./magic-sprites":46,"./board-layout":45,"./view":47,"./ranking":49,"./online-ranking":50,"./audio":53,"./board-assets":48}],
 1:[function(module,exports,require){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
@@ -6087,8 +6206,9 @@ exports.recordLocalRanking = recordLocalRanking;
 50:[function(module,exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.persistOnlineAuth = exports.submitOnlineScore = exports.fetchOnlineRanking = exports.getCachedOnlineRanking = exports.logoutOnline = exports.signInOnline = exports.prepareOnline = exports.getOnlineAuth = exports.ONLINE_RANKING_CACHE_MS = exports.ONLINE_TIMEOUT_MS = void 0;
+exports.persistOnlineAuth = exports.submitOnlineScore = exports.fetchOnlineRanking = exports.getCachedOnlineRanking = exports.deleteOnlineAccount = exports.isOnlineAccountDeletionPending = exports.logoutOnline = exports.registerOnlineName = exports.signInOnline = exports.prepareOnline = exports.getOnlineAuth = exports.ONLINE_RANKING_CACHE_MS = exports.ONLINE_TIMEOUT_MS = void 0;
 const ranking_name_1 = require("./ranking-name");
+const online_account_deletion_1 = require("./online-account-deletion");
 exports.ONLINE_TIMEOUT_MS = 30000;
 exports.ONLINE_RANKING_CACHE_MS = 30000;
 const AUTH_KEY = "voldecade-online-auth-v2";
@@ -6096,7 +6216,7 @@ const snapshots = new Map();
 const cacheKey = (season) => `voldecade-ranking-cache-v2:${season}`;
 let apiPromise = null;
 const api = async () => {
-    apiPromise ?? (apiPromise = new Function("url", "return import(url)")(new URL("./firebase-online.js", document.baseURI).href).then((loaded) => {
+    apiPromise ?? (apiPromise = new Function("url", "return import(url)")(new URL("./firebase-online.js?v=e11758fed3a048b3", document.baseURI).href).then((loaded) => {
         const candidate = loaded.default;
         return candidate.default ?? candidate;
     }).catch((error) => { apiPromise = null; throw error; }));
@@ -6123,10 +6243,41 @@ const withTimeout = (promise) => new Promise((resolve, reject) => {
 });
 const prepareOnline = async () => { await withTimeout(api()); };
 exports.prepareOnline = prepareOnline;
-const signInOnline = async (name) => withTimeout((await api()).signInWithGoogle(name));
+const signInOnline = async () => withTimeout((await api()).signInWithGoogle());
 exports.signInOnline = signInOnline;
+const registerOnlineName = async (name) => withTimeout((await api()).registerDisplayName(name));
+exports.registerOnlineName = registerOnlineName;
 const logoutOnline = () => { void api().then((module) => module.logoutOnline()).catch(() => { }); localStorage.removeItem(AUTH_KEY); };
 exports.logoutOnline = logoutOnline;
+const isOnlineAccountDeletionPending = () => {
+    const account = cachedAuth();
+    return account !== null && (0, online_account_deletion_1.isAccountDeletionPending)(account.token);
+};
+exports.isOnlineAccountDeletionPending = isOnlineAccountDeletionPending;
+const clearOnlineRankingSnapshots = () => {
+    snapshots.clear();
+    try {
+        for (let index = localStorage.length - 1; index >= 0; index--) {
+            const key = localStorage.key(index);
+            if (key?.startsWith("voldecade-ranking-cache-v2:") === true)
+                localStorage.removeItem(key);
+        }
+    }
+    catch { /* Memory cache has already been cleared. */ }
+};
+const deleteOnlineAccount = async (expectedUid) => {
+    try {
+        await (await api()).deleteOnlineAccount(expectedUid);
+    }
+    finally {
+        clearOnlineRankingSnapshots();
+    }
+    try {
+        localStorage.removeItem(AUTH_KEY);
+    }
+    catch { /* Firebase has already deleted the authenticated user. */ }
+};
+exports.deleteOnlineAccount = deleteOnlineAccount;
 const getCachedOnlineRanking = (season = "v1") => {
     const memory = snapshots.get(season);
     if (memory !== undefined)
@@ -6181,7 +6332,7 @@ const persistOnlineAuth = (auth) => {
 };
 exports.persistOnlineAuth = persistOnlineAuth;
 
-},{"./ranking-name":51}],
+},{"./ranking-name":51,"./online-account-deletion":52}],
 51:[function(module,exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -6197,6 +6348,36 @@ exports.rankingNameKey = rankingNameKey;
 
 },{}],
 52:[function(module,exports,require){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.clearAccountDeletionPending = exports.markAccountDeletionPending = exports.isAccountDeletionPending = void 0;
+const KEY = "voldecade-online-deletion-pending-v1";
+const isAccountDeletionPending = (uid) => {
+    try {
+        return localStorage.getItem(KEY) === uid;
+    }
+    catch {
+        return false;
+    }
+};
+exports.isAccountDeletionPending = isAccountDeletionPending;
+const markAccountDeletionPending = (uid) => {
+    try {
+        localStorage.setItem(KEY, uid);
+    }
+    catch { /* The current session can still retry without local storage. */ }
+};
+exports.markAccountDeletionPending = markAccountDeletionPending;
+const clearAccountDeletionPending = () => {
+    try {
+        localStorage.removeItem(KEY);
+    }
+    catch { /* Browser storage is optional. */ }
+};
+exports.clearAccountDeletionPending = clearAccountDeletionPending;
+
+},{}],
+53:[function(module,exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SoundManager = void 0;

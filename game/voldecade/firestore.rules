@@ -14,6 +14,9 @@ service cloud.firestore {
       let reservation = getAfter(/databases/$(database)/documents/usernames/$(key)).data;
       return reservation.uid == uid && reservation.displayName == name;
     }
+    function usernameMigrationReady() {
+      return get(/databases/$(database)/documents/config/usernameMigration).data.ready == true;
+    }
     function validEntry() {
       let data = request.resource.data;
       return data.keys().hasAll(['uid', 'name', 'clearedStages', 'turnsToLastClear', 'killDifference', 'enemyDefeated', 'playerDefeated', 'updatedAt'])
@@ -31,18 +34,28 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if signedInAs(uid);
       allow create: if signedInAs(uid)
+        && usernameMigrationReady()
         && validDisplayName(request.resource.data.displayName)
         && reservedBy(uid, request.resource.data.displayName);
+      allow delete: if signedInAs(uid);
+    }
+    match /config/{id} {
+      allow get: if id == 'usernameMigration' && request.auth != null;
     }
     match /usernames/{key} {
       allow get: if request.auth != null;
+      allow list: if request.auth != null && resource.data.uid == request.auth.uid;
       allow create: if request.auth != null
+        && usernameMigrationReady()
         && request.resource.data.keys().hasAll(['uid', 'displayName'])
         && request.resource.data.keys().hasOnly(['uid', 'displayName'])
         && request.resource.data.uid == request.auth.uid
         && validDisplayName(request.resource.data.displayName)
         && key == request.resource.data.displayName.lower()
         && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.displayName == request.resource.data.displayName;
+      allow delete: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && !existsAfter(/databases/$(database)/documents/users/$(request.auth.uid));
     }
     match /leaderboards/{season}/entries/{uid} {
       allow read: if true;
