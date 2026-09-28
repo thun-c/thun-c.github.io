@@ -18,6 +18,7 @@ const ranking_1 = require("./ranking");
 const online_ranking_1 = require("./online-ranking");
 const audio_1 = require("./audio");
 const board_assets_1 = require("./board-assets");
+const tutorial_1 = require("./tutorial");
 const onlineProgress = {
     ranking: "ランキングを読み込み中…",
     login: "ログイン中…",
@@ -45,7 +46,10 @@ class BrowserApp {
         this.warning = null;
         this.settings = (0, settings_1.loadSettings)(localStorage);
         this.store = new persistence_1.IndexedDbLocalStore();
-        this.tutorialStep = localStorage.getItem("voldecade-tutorial-v1") === "done" ? 4 : 0;
+        this.tutorialState = null;
+        this.tutorialWaitTimer = null;
+        this.tutorialFastForwarding = false;
+        this.tutorialKeyboardInput = false;
         this.ai = new ai_worker_client_1.AiWorkerClient(new Worker("./ai-worker.js?v=37e3bb37dd1553f3"));
         this.audio = new audio_1.SoundManager();
         this.confirming = false;
@@ -103,6 +107,11 @@ class BrowserApp {
             if (document.hidden) {
                 this.pauseReplay();
                 this.audio.pause();
+                if (this.route === "tutorial" && this.tutorialState !== null) {
+                    this.clearTutorialWait();
+                    this.tutorialState = { ...this.tutorialState, session: (0, game_session_1.setSessionPaused)(this.tutorialState.session, true) };
+                    this.render();
+                }
             }
             if (this.route === "game" && this.session !== null && document.hidden) {
                 this.session = (0, game_session_1.setSessionPaused)(this.session, true);
@@ -124,6 +133,8 @@ class BrowserApp {
             this.resultSubmissionPending = false;
             if (route !== "game" && route !== "replay")
                 this.audio.stop();
+            if (this.route === "tutorial")
+                this.clearTutorial();
             this.clearStageTransition();
             this.pauseReplay();
             this.warning = null;
@@ -137,6 +148,16 @@ class BrowserApp {
             return;
         }
         const action = button.dataset.action;
+        if (this.route === "tutorial") {
+            this.tutorialKeyboardInput = event.detail === 0;
+            try {
+                this.onTutorialClick(button);
+            }
+            finally {
+                this.tutorialKeyboardInput = false;
+            }
+            return;
+        }
         if (this.onlineRankingRefreshing && this.isOnlineRequestAction(action))
             return;
         if (this.stageTransitionState !== null)
@@ -146,21 +167,11 @@ class BrowserApp {
             this.warning = null;
         try {
             if (action === "new") {
-                this.dismissResultPopup();
-                this.completedReplay = null;
-                this.resultPersonalBest = false;
-                this.resultSubmissionPending = false;
-                this.submittedResultAccounts.clear();
-                this.clearShareVideo();
-                this.clearStageTransition();
-                this.confirmationId += 1;
-                this.confirming = false;
-                const stageSelector = this.element.querySelector("[data-development-stage]");
-                const stageNumber = stageSelector === null ? 1 : Number(stageSelector.value);
-                this.developmentPractice = stageSelector !== null;
-                this.session = (0, game_session_1.createGameSession)(Date.now() >>> 0, stageNumber);
-                this.audio.start();
-                this.route = "game";
+                this.startGame();
+            }
+            else if (action === "tutorial-start") {
+                this.startTutorial();
+                return;
             }
             else if (action === "close-result-popup") {
                 this.dismissResultPopup();
@@ -312,7 +323,7 @@ class BrowserApp {
                 return;
             }
             else if (action === "mode-toggle" && this.session !== null) {
-                this.session = (0, game_session_1.changeControlMode)(this.session, this.session.input.control.mode === "GROUP" ? "INDIVIDUAL" : "GROUP");
+                this.toggleControlMode();
             }
             else if ((button.dataset.direction !== undefined || button.dataset.magicDirection !== undefined) && this.session !== null) {
                 const direction = (button.dataset.direction ?? button.dataset.magicDirection);
@@ -342,11 +353,6 @@ class BrowserApp {
             else if (action === "resume" && this.session !== null) {
                 this.session = (0, game_session_1.setSessionPaused)(this.session, false);
                 this.audio.resume();
-            }
-            else if (action === "tutorial-next") {
-                this.tutorialStep = Math.min(4, this.tutorialStep + 1);
-                if (this.tutorialStep === 4)
-                    localStorage.setItem("voldecade-tutorial-v1", "done");
             }
             else if (action === "verify-replay" && DEVELOPMENT_BUILD) {
                 await this.importReplay();
@@ -416,12 +422,128 @@ class BrowserApp {
         }
         this.render();
     }
+    startGame() {
+        this.clearTutorial();
+        this.dismissResultPopup();
+        this.completedReplay = null;
+        this.resultPersonalBest = false;
+        this.resultSubmissionPending = false;
+        this.submittedResultAccounts.clear();
+        this.clearShareVideo();
+        this.clearStageTransition();
+        this.confirmationId += 1;
+        this.confirming = false;
+        const stageSelector = this.element.querySelector("[data-development-stage]");
+        const stageNumber = stageSelector === null ? 1 : Number(stageSelector.value);
+        this.developmentPractice = stageSelector !== null;
+        this.session = (0, game_session_1.createGameSession)(Date.now() >>> 0, stageNumber);
+        this.audio.start();
+        this.route = "game";
+    }
+    startTutorial() {
+        this.clearTutorial();
+        this.dismissResultPopup();
+        this.clearStageTransition();
+        this.pauseReplay();
+        this.confirmationId += 1;
+        this.confirming = false;
+        this.audio.stop();
+        this.tutorialState = (0, tutorial_1.createTutorial)();
+        this.route = "tutorial";
+        this.audio.start();
+        this.render();
+    }
+    clearTutorialWait() {
+        if (this.tutorialWaitTimer !== null)
+            window.clearTimeout(this.tutorialWaitTimer);
+        this.tutorialWaitTimer = null;
+        this.tutorialFastForwarding = false;
+    }
+    clearTutorial() {
+        this.clearTutorialWait();
+        this.tutorialState = null;
+    }
+    onTutorialClick(button) {
+        if (this.tutorialState === null)
+            return;
+        const action = button.dataset.action;
+        if (action === "tutorial-restart") {
+            this.startTutorial();
+            return;
+        }
+        if (action === "tutorial-start-game") {
+            this.audio.stop();
+            this.startGame();
+            this.render();
+            return;
+        }
+        if (action === "resume" && this.tutorialState.session.paused) {
+            this.tutorialState = { ...this.tutorialState, session: (0, game_session_1.setSessionPaused)(this.tutorialState.session, false) };
+            this.audio.resume();
+            this.render();
+            return;
+        }
+        if (this.tutorialState.session.paused || this.tutorialFastForwarding)
+            return;
+        if (action === "tutorial-next" && (0, tutorial_1.tutorialReadyForNext)(this.tutorialState.phase)) {
+            this.tutorialState = (0, tutorial_1.nextTutorialLesson)(this.tutorialState);
+            this.render();
+        }
+        else if (action === "tutorial-fast-forward" && this.tutorialState.phase === "wait") {
+            this.tutorialFastForwarding = true;
+            this.render();
+            this.scheduleTutorialWait();
+        }
+        else if (action === "mode-toggle") {
+            this.tutorialState = (0, tutorial_1.tutorialToggleMode)(this.tutorialState);
+            this.render();
+        }
+        else if (button.dataset.direction !== undefined || button.dataset.magicDirection !== undefined) {
+            const direction = (button.dataset.direction ?? button.dataset.magicDirection);
+            this.applyTutorialDirection(direction, button.dataset.magicDirection !== undefined);
+        }
+    }
+    applyTutorialDirection(direction, placeMagic) {
+        if (this.tutorialState === null || this.tutorialFastForwarding)
+            return;
+        const before = this.tutorialState.session.run.controller.state.turn;
+        this.tutorialState = (0, tutorial_1.tutorialDirection)(this.tutorialState, direction, placeMagic);
+        if (this.tutorialState.session.run.controller.state.turn !== before)
+            this.audio.playEvents(this.tutorialState.session.events);
+        this.render();
+    }
+    scheduleTutorialWait() {
+        if (!this.tutorialFastForwarding || this.tutorialState?.phase !== "wait" || this.route !== "tutorial")
+            return;
+        this.tutorialWaitTimer = window.setTimeout(() => {
+            this.tutorialWaitTimer = null;
+            if (this.route !== "tutorial" || !this.tutorialFastForwarding || this.tutorialState?.phase !== "wait")
+                return;
+            if (this.tutorialState.session.paused || document.hidden) {
+                this.clearTutorialWait();
+                return;
+            }
+            this.tutorialState = (0, tutorial_1.tutorialWaitTurn)(this.tutorialState);
+            this.audio.playEvents(this.tutorialState.session.events);
+            if (this.tutorialState.phase !== "wait")
+                this.tutorialFastForwarding = false;
+            this.render();
+            if (this.tutorialFastForwarding)
+                this.scheduleTutorialWait();
+        }, 450);
+    }
     onKeyDown(event) {
         if (this.onlineOperation !== null || this.replayExporting || this.replayDeleting)
             return;
-        if (this.route !== "game" || this.session === null || this.tutorialStep < 4 || this.stageTransitionState !== null)
+        if (this.route === "tutorial") {
+            this.onTutorialKeyDown(event);
+            return;
+        }
+        if (this.route !== "game" || this.session === null || this.stageTransitionState !== null)
             return;
         if (this.session.run.controller.state.outcome.kind !== "ONGOING")
+            return;
+        if (this.session.paused)
             return;
         if (event.repeat || event.ctrlKey || event.metaKey || event.altKey)
             return;
@@ -451,10 +573,52 @@ class BrowserApp {
                     : "EIGHT_TURNS";
             this.session = (0, game_session_1.setDraftFuse)(this.session, current === "INFINITE" ? "EIGHT_TURNS" : "INFINITE");
         }
+        else if (event.key === "c" || event.key === "C") {
+            this.toggleControlMode();
+        }
         else
             return;
         event.preventDefault();
         this.render();
+    }
+    onTutorialKeyDown(event) {
+        if (this.tutorialState === null || this.tutorialState.session.paused || this.tutorialFastForwarding)
+            return;
+        if (event.repeat || event.ctrlKey || event.metaKey || event.altKey)
+            return;
+        const target = event.target;
+        if (target instanceof HTMLElement && (target.matches("input, textarea, select") || target.isContentEditable))
+            return;
+        const direction = (0, keyboard_1.directionForKeyboardEvent)(event);
+        if (direction === undefined && event.key !== "c" && event.key !== "C")
+            return;
+        this.tutorialKeyboardInput = true;
+        try {
+            if (direction !== undefined)
+                this.applyTutorialDirection(direction, event.shiftKey);
+            else {
+                this.tutorialState = (0, tutorial_1.tutorialToggleMode)(this.tutorialState);
+                this.render();
+            }
+        }
+        finally {
+            this.tutorialKeyboardInput = false;
+        }
+        event.preventDefault();
+    }
+    toggleControlMode() {
+        if (this.session === null)
+            return;
+        const mode = this.session.input.control.mode === "GROUP" ? "INDIVIDUAL" : "GROUP";
+        try {
+            this.session = (0, game_session_1.changeControlMode)(this.session, mode);
+            this.warning = null;
+        }
+        catch (error) {
+            this.warning = mode === "GROUP"
+                ? "2体が生存し、同じマスにいる場合だけ同時操作に切り替えられます。"
+                : error instanceof Error ? error.message : String(error);
+        }
     }
     onChange(event) {
         if (this.onlineOperation !== null || this.replayExporting || this.replayDeleting)
@@ -692,6 +856,7 @@ class BrowserApp {
         this.render();
         let stream = null;
         try {
+            this.audio.beginCapture();
             if (typeof canvas.captureStream !== "function")
                 throw new Error("このブラウザは動画書き出しに対応していません。");
             if (timeline.frames.slice(start, end + 1).some((frame) => (frame.videoState ?? frame.run.controller.state).lastBlastCells.length > 0)) {
@@ -805,6 +970,7 @@ class BrowserApp {
             this.replayExporting = false;
             if (forSharing)
                 this.audio.stop();
+            this.audio.endCapture();
             this.render();
         }
     }
@@ -983,7 +1149,7 @@ class BrowserApp {
     renderHome() {
         return `<main class="screen home-screen"><div class="hero"><p class="eyebrow">TACTICAL GRID GAME</p><h1>VOLDECADE</h1><p>2人の術者を動かし、8ターン／無限の魔力球で勝ち抜こう。</p>
       ${DEVELOPMENT_STAGE_CONTROL}
-      <div class="home-actions"><button class="primary" data-action="new">ゲームを始める</button></div>
+      <div class="home-actions"><button class="primary" data-action="new">ゲームを始める</button><button data-action="tutorial-start">チュートリアル</button></div>
       <nav><button data-route="how">遊び方</button><button data-route="settings">設定</button><button data-route="ranking">オンラインランキング</button><button data-route="replays">リプレイ</button><button data-route="credits">素材クレジット</button></nav>
       ${this.warning === null ? "" : `<p class="warning" role="alert">${this.warning}</p>`}</div></main>`;
     }
@@ -994,7 +1160,7 @@ class BrowserApp {
         return `<main class="screen text-screen"><button data-route="home">← ホーム</button><h1>遊び方</h1>
       <section class="how-purpose"><h2>目的とランキング</h2><p>2人の術者を動かし、敵を倒しながら、できるだけ多くのステージをクリアしましょう。</p><p>ランキングは、次の順番で順位を決めます。3項目を合計した点数ではありません。</p><ul><li><strong>① クリアしたステージ数</strong>：多い方が上位</li><li><strong>② 最後にクリアしたステージまでのターン数</strong>：少ない方が上位</li><li><strong>③ 撃墜差</strong>：全ステージ通算の「敵撃墜数 − 味方撃墜数」。大きい方が上位</li></ul></section>
       <section class="how-rules"><h2>基本操作とルール</h2><ol><li><strong>方向ボタンまたは停止ボタンで即確定</strong>します。Shiftを押しながら入力すると、動作後に${magicIcon}魔力球を設置します。</li><li>${magicIcon}魔力球は<strong>8ターンで発動</strong>する設置と、自然発動しない無期限の設置を選べます。残り設置枠が1個の場合は8ターン固定です。無期限の魔力球も雷撃で誘爆します。</li><li>壊せる壁の中には${powerItem}と${capacityItem}が隠れています。前者は火力、後者は設置数を増やします。配置は180度対称です。</li><li>ターン終了時に<strong>味方の生存数が敵を上回ればステージクリア</strong>です。味方が倒れていても、敵より多く生き残ればクリアできます。同数以下で誰かが倒れると敗北です。</li><li>ゲーム開始時は2体同時操作です。同じマスなら個別操作にも切り替えられます。別のマスに移動すると個別操作に切り替わり、同じマスに戻った後は切替ボタンで2体同時操作に戻せます。</li></ol></section>
-      <h2>キーボード</h2><p>W/S/A/Dまたは矢印: 移動、X: 停止、Shift＋移動／停止: 動作後に${magicIcon}魔力球を設置、F: 発動方法の切り替え。</p></main>`;
+      <h2>キーボード</h2><p>W/S/A/Dまたは矢印: 移動、X: 停止、Shift＋移動／停止: 動作後に${magicIcon}魔力球を設置、F: 発動方法の切り替え、C: 操作モードの切り替え。</p></main>`;
     }
     renderCredits() {
         return `<main class="screen text-screen"><button data-route="home">← ホーム</button><h1>素材クレジット</h1>
@@ -1226,17 +1392,38 @@ class BrowserApp {
             this.sprites.render(canvas, state, frame.events);
         }
     }
-    tutorial() {
-        if (this.tutorialStep >= 4 || this.route !== "game")
+    renderTutorialGuide() {
+        if (this.tutorialState === null)
             return "";
-        const steps = [
-            ["移動後に設置", "方向またはXで即確定します。Shiftを押しながら入力すると、動作後に△を置きます。"],
-            ["8ターン／∞", "残り枠が2個以上なら選べます。∞は自然発動しませんが、雷撃では誘爆します。"],
-            ["生存数で勝敗判定", "ターン終了時に味方の生存数が敵を上回れば、味方が1体倒れていてもステージクリアです。同数以下で誰かが倒れると敗北します。"],
-            ["操作モードの切替", "同じマスでは2体同時操作と個別操作を切り替えられます。別のマスに移動すると個別操作に切り替わり、同じマスに戻った後は切替ボタンで2体同時操作に戻せます。"],
-        ];
-        const step = steps[this.tutorialStep];
-        return `<div class="tutorial" role="dialog" aria-modal="true" aria-labelledby="tutorial-title"><p>${this.tutorialStep + 1}/4</p><h2 id="tutorial-title">${step[0]}</h2><p>${step[1]}</p><button data-action="tutorial-next">${this.tutorialStep === 3 ? "操作を始める" : "次へ"}</button></div>`;
+        const tutorial = this.tutorialState;
+        const guide = (0, tutorial_1.tutorialGuide)(tutorial);
+        const ready = (0, tutorial_1.tutorialReadyForNext)(tutorial.phase);
+        const finished = tutorial.phase === "final-done";
+        const remaining = tutorial.session.run.controller.state.magics[0]?.detonateTurn;
+        const selected = tutorial.session.input.control.selectedCharacterId;
+        const showSelected = tutorial.session.input.control.mode === "INDIVIDUAL"
+            && (tutorial.phase === "separate" || tutorial.phase === "rejoin" || tutorial.phase === "final-wait");
+        const selectedCue = showSelected
+            ? `<p class="tutorial-selected">${(0, sprite_assets_1.characterSpritesEnabled)() ? `<img class="character-icon${(0, sprite_assets_1.isSecondCharacter)(selected) ? " character-secondary" : ""}" src="${(0, sprite_assets_1.spriteUrl)(selected, "icon", "f", tutorial.session.run.controller.state)}" alt="">` : ""}いま操作するキャラ：味方${selected + 1}</p>`
+            : "";
+        const waitText = this.tutorialFastForwarding && remaining !== null && remaining !== undefined
+            ? `<p role="status">発動まで自動進行中… 残り${Math.max(0, remaining - tutorial.session.run.controller.state.turn)}ターン</p>` : "";
+        const actions = finished
+            ? '<button class="primary" data-action="tutorial-start-game">ゲームを始める</button><button data-action="tutorial-restart">もう一度チュートリアル</button>'
+            : ready
+                ? '<button class="primary" data-action="tutorial-next">次へ</button>'
+                : tutorial.phase === "wait"
+                    ? `<button class="primary" data-action="tutorial-fast-forward" ${this.tutorialFastForwarding ? "disabled" : ""}>発動まで進める</button>`
+                    : "";
+        return `<section class="tutorial-guide" data-tutorial-phase="${tutorial.phase}" aria-label="チュートリアルの案内">
+      <div class="tutorial-guide-head"><span>課題 ${(0, tutorial_1.tutorialLesson)(tutorial.phase)} / 5</span><h2>${escapeHtml(guide.title)}</h2>${guide.keyboard === "" ? "" : `<details class="tutorial-mobile-help"><summary>操作方法</summary><div class="tutorial-mobile-help-content"><p><strong>キーボード：</strong>${escapeHtml(guide.keyboard)}</p><p><strong>画面ボタン：</strong>${escapeHtml(guide.buttons)}</p></div></details>`}</div>
+      <p>${escapeHtml(guide.explanation)}</p>
+      ${selectedCue}
+      <p class="tutorial-input-note">キーボードでも画面のボタンでも、どちらで操作しても進められます。</p>
+      ${guide.keyboard === "" ? "" : `<div class="tutorial-inputs"><span><strong>キーボード：</strong>${escapeHtml(guide.keyboard)}</span><span><strong>画面ボタン：</strong>${escapeHtml(guide.buttons)}</span></div>`}
+      ${tutorial.feedback === null ? "" : `<p class="tutorial-feedback" role="status">${escapeHtml(tutorial.feedback)}</p>`}
+      ${waitText}<div class="tutorial-actions">${actions}${finished ? "" : '<button data-action="tutorial-restart">最初から</button>'}</div>
+    </section>`;
     }
     applySettings() {
         this.audio.setVolume(this.settings.volume);
@@ -1406,18 +1593,30 @@ class BrowserApp {
         }
         else if (this.route === "replay")
             this.element.innerHTML = this.renderReplay();
+        else if (this.route === "tutorial" && this.tutorialState !== null) {
+            this.element.innerHTML = (0, view_1.renderGameScreen)(this.tutorialState.session, null, false, undefined, this.settings.volume, {
+                lesson: (0, tutorial_1.tutorialLesson)(this.tutorialState.phase),
+                guide: this.renderTutorialGuide(),
+                finished: this.tutorialState.phase === "final-done",
+                targetCell: (0, tutorial_1.tutorialTargetCell)(this.tutorialState.phase),
+            });
+        }
         else if (this.session !== null) {
-            this.element.innerHTML = (0, view_1.renderGameScreen)(this.session, this.warning, this.developmentPractice, this.stageTransitionState ?? undefined, this.settings.volume) + this.tutorial();
+            this.element.innerHTML = (0, view_1.renderGameScreen)(this.session, this.warning, this.developmentPractice, this.stageTransitionState ?? undefined, this.settings.volume);
         }
         const canvas = this.element.querySelector("#game-board");
         if (canvas !== null) {
-            const state = this.route === "replay" && this.replayTimeline !== null
-                ? this.replayTimeline.frames[this.replayFrame]?.run.controller.state
-                : this.stageTransitionState ?? this.session?.run.controller.state;
+            const state = this.route === "tutorial" && this.tutorialState !== null
+                ? this.tutorialState.session.run.controller.state
+                : this.route === "replay" && this.replayTimeline !== null
+                    ? this.replayTimeline.frames[this.replayFrame]?.run.controller.state
+                    : this.stageTransitionState ?? this.session?.run.controller.state;
             if (state !== undefined) {
                 (0, view_1.drawBoard)(canvas, state);
-                const events = this.route === "replay" ? this.replayTimeline?.frames[this.replayFrame]?.events ?? [] : this.session?.events ?? [];
-                const preview = this.route === "game" && this.session !== null ? (0, game_session_1.getIndividualDraftPreview)(this.session) : undefined;
+                const events = this.route === "tutorial" ? this.tutorialState?.session.events ?? [] : this.route === "replay" ? this.replayTimeline?.frames[this.replayFrame]?.events ?? [] : this.session?.events ?? [];
+                const preview = this.route === "tutorial" && this.tutorialState !== null
+                    ? (0, game_session_1.getIndividualDraftPreview)(this.tutorialState.session)
+                    : this.route === "game" && this.session !== null ? (0, game_session_1.getIndividualDraftPreview)(this.session) : undefined;
                 this.magicSprites.render(canvas, state, preview);
                 this.sprites.render(canvas, state, events, preview);
             }
@@ -1425,6 +1624,19 @@ class BrowserApp {
         else {
             this.sprites.clear();
             this.magicSprites.clear();
+        }
+        if (this.route === "tutorial" && this.tutorialState !== null) {
+            const selector = (0, tutorial_1.tutorialTargetSelector)(this.tutorialState);
+            this.element.querySelectorAll(".game-controls button").forEach((button) => {
+                if (selector === null || !button.matches(selector) || this.tutorialFastForwarding)
+                    button.disabled = true;
+            });
+            if (selector !== null) {
+                const target = this.element.querySelector(selector);
+                target?.classList.add("tutorial-target");
+                if (this.tutorialKeyboardInput)
+                    target?.focus({ preventScroll: true });
+            }
         }
         this.applySettings();
         this.renderOnlineBusy();
@@ -1463,7 +1675,7 @@ if ("serviceWorker" in navigator) {
     });
 }
 
-},{"@voldecade/replay":1,"@voldecade/engine":5,"./game-session":35,"./keyboard":37,"./ai-worker-client":38,"./persistence":40,"./replay-player":41,"./settings":42,"./character-sprites":43,"./sprite-assets":44,"./magic-sprites":46,"./board-layout":45,"./view":47,"./ranking":49,"./online-ranking":50,"./audio":53,"./board-assets":48}],
+},{"@voldecade/replay":1,"@voldecade/engine":5,"./game-session":35,"./keyboard":37,"./ai-worker-client":38,"./persistence":40,"./replay-player":41,"./settings":42,"./character-sprites":43,"./sprite-assets":44,"./magic-sprites":46,"./board-layout":45,"./view":47,"./ranking":49,"./online-ranking":50,"./audio":53,"./board-assets":48,"./tutorial":54}],
 1:[function(module,exports,require){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
@@ -5936,7 +6148,7 @@ const renderSurvivalBreakdown = (state) => {
   </section>`;
 };
 exports.renderSurvivalBreakdown = renderSurvivalBreakdown;
-const renderGameScreen = (session, warning, developmentPractice = false, displayState, volume = 0.5) => {
+const renderGameScreen = (session, warning, developmentPractice = false, displayState, volume = 0.5, tutorial) => {
     const summary = (0, game_session_1.getSessionSummary)(session);
     const group = session.input.control.mode === "GROUP";
     const state = session.run.controller.state;
@@ -5948,18 +6160,24 @@ const renderGameScreen = (session, warning, developmentPractice = false, display
             ? draft.actions[session.input.control.selectedCharacterId === 0 ? 0 : 1].fuse ?? "EIGHT_TURNS"
             : "EIGHT_TURNS";
     const infiniteAvailable = (0, game_session_1.canChooseInfiniteFuse)(session);
-    const gameEnded = state.outcome.kind !== "ONGOING";
-    const sidePanel = gameEnded
-        ? `<section class="control-panel final-board-panel" aria-label="最終盤面の確認">
+    const gameEnded = state.outcome.kind !== "ONGOING" || tutorial?.finished === true;
+    const target = tutorial?.targetCell;
+    const cellWidth = 100 / Math.max(1, state.width - 1);
+    const cellHeight = 100 / Math.max(1, state.height - 1);
+    const targetMarker = target === null || target === undefined ? "" : `<span class="tutorial-board-target" aria-hidden="true" style="left:${target.col === 0 ? 0 : (target.col - .5) * cellWidth}%;top:${target.row === 0 ? 0 : (target.row - .5) * cellHeight}%;width:${cellWidth}%;height:${cellHeight}%"></span>`;
+    const sidePanel = tutorial?.finished
+        ? `<section class="control-panel final-board-panel" aria-label="チュートリアルの結果"><h2>生存数で勝利</h2>${(0, exports.renderSurvivalBreakdown)(state)}</section>`
+        : gameEnded
+            ? `<section class="control-panel final-board-panel" aria-label="最終盤面の確認">
         <p class="eyebrow">FINAL BOARD</p><h2>最後の盤面</h2>
         <p>青白い雷撃が最後に発動した魔力球の範囲です。盤面を確認してから結果へ進めます。</p>
         ${(0, exports.renderSurvivalBreakdown)(state)}
         <button class="primary" data-action="show-result">結果を見る</button>
       </section>`
-        : `<section class="control-panel game-controls" tabindex="0" aria-label="ゲーム操作。矢印またはWASDで移動、Xで停止、Shift併用で設置">
+            : `<section class="control-panel game-controls" tabindex="0" aria-label="ゲーム操作。矢印またはWASDで移動、Xで停止、Shift併用で設置">
         <div class="mode-row" role="group" aria-label="操作モード">
-          <button data-action="mode-toggle" aria-pressed="${group}">操作: ${group ? "2体同時" : "2体個別"}（切替）</button>
-          <button data-action="fuse" ${infiniteAvailable ? "" : "disabled"} aria-label="魔力球の自然発動設定">発動: ${requestedFuse === "INFINITE" ? "∞" : "8ターン"} <kbd>F</kbd></button>
+          <button data-action="mode-toggle" aria-pressed="${group}">操作: ${group ? "2体同時" : "2体個別"}（切替） <kbd>C</kbd></button>
+          ${tutorial === undefined ? `<button data-action="fuse" ${infiniteAvailable ? "" : "disabled"} aria-label="魔力球の自然発動設定">発動: ${requestedFuse === "INFINITE" ? "∞" : "8ターン"} <kbd>F</kbd></button>` : ""}
         </div>
         <div class="pad-row">
           <div class="pad-group"><div class="direction-pad" aria-label="移動または待機">
@@ -5977,19 +6195,21 @@ const renderGameScreen = (session, warning, developmentPractice = false, display
             <button data-magic-direction="DOWN" aria-label="下へ移動して魔力球を設置" ${(0, game_session_1.isDirectionAvailable)(session, "DOWN", true) ? "" : "disabled"}><img class="control-button-icon" src="${magicButtonSprites.DOWN}" alt=""></button>
           </div></div>
         </div>
-        <p class="quick-help">方向／<kbd>X</kbd>で即確定。<kbd>Shift</kbd>＋方向／<kbd>X</kbd>で動作後に△を置く。</p>
+        <p class="quick-help">方向／<kbd>X</kbd>で即確定。<kbd>Shift</kbd>＋方向／<kbd>X</kbd>で動作後に魔力球を置く。</p>
       </section>`;
-    return `<main class="screen game-screen ${session.paused ? "is-paused" : ""}">
+    return `<main class="screen game-screen ${tutorial === undefined ? "" : `tutorial-screen${tutorial.finished ? " tutorial-complete" : ""}`} ${session.paused ? "is-paused" : ""}">
     <header class="game-header">
       <button data-route="home" class="quiet">ホーム</button>
-      <div><strong>ステージ ${summary.stage}「${(0, engine_1.getStageName)(summary.stage)}」</strong><span>${developmentPractice ? "開発用練習・終了時にリプレイ保存" : `周回 ${summary.cycle} / 通算クリア ${summary.clearedStages}`}</span></div>
-      <div class="game-turn"><strong>${state.turn}/1000</strong><span>ターン</span></div>
+      ${tutorial === undefined ? "" : '<button class="tutorial-header-restart" data-action="tutorial-restart">最初から</button>'}
+      <div>${tutorial === undefined ? `<strong>ステージ ${summary.stage}「${(0, engine_1.getStageName)(summary.stage)}」</strong><span>${developmentPractice ? "開発用練習・終了時にリプレイ保存" : `周回 ${summary.cycle} / 通算クリア ${summary.clearedStages}`}</span>` : `<strong>チュートリアル</strong><span>課題 ${tutorial.lesson} / 5</span>`}</div>
+      <div class="game-turn"><strong>${tutorial === undefined ? `${state.turn}/1000` : state.turn}</strong><span>ターン</span></div>
     </header>
     ${warning === null ? "" : `<p class="warning" role="alert">${escapeHtml(warning)}</p>`}
-    ${session.paused ? '<div class="pause-panel" role="alert"><strong>一時停止中</strong><span>画面がバックグラウンドになったため入力を停止しました。</span><button data-action="resume">プレイを再開</button></div>' : ""}
+    ${session.paused ? `<div class="pause-panel" role="alert"><strong>一時停止中</strong><span>画面がバックグラウンドになったため入力を停止しました。</span><button data-action="resume">プレイを再開</button>${tutorial === undefined ? "" : '<button data-action="tutorial-restart">最初から</button><button data-route="home">ホーム</button>'}</div>` : ""}
+    ${tutorial?.guide ?? ""}
     <section class="play-layout">
       <div class="board-panel">
-        <div class="sprite-board"><canvas id="game-board" width="600" height="600" role="img" aria-label="ゲーム盤面"></canvas></div>
+        <div class="sprite-board"><canvas id="game-board" width="600" height="600" role="img" aria-label="ゲーム盤面"></canvas>${targetMarker}</div>
         ${(0, sprite_assets_1.characterSpritesEnabled)() ? `<div class="sprite-roster" aria-label="キャラクター情報">${rosterState.characters.map(c => {
         return `<div class="roster-character team-${c.teamId}">
             <div class="roster-heading"><img class="character-icon${(0, sprite_assets_1.isSecondCharacter)(c.id) ? " character-secondary" : ""}" src="${(0, sprite_assets_1.spriteUrl)(c.id, "icon", "f", rosterState)}" alt=""></div>
@@ -6393,12 +6613,13 @@ const EXPORT_AUDIO_VOLUME = 0.5;
 class SoundManager {
     constructor() {
         this.effects = new Map();
-        this.context = typeof window === "undefined" ? null : new AudioContext();
-        this.gain = this.context?.createGain() ?? null;
-        this.effectGain = this.context?.createGain() ?? null;
-        this.captureDestination = this.context?.createMediaStreamDestination() ?? null;
-        this.captureBgmGain = this.context?.createGain() ?? null;
-        this.captureEffectGain = this.context?.createGain() ?? null;
+        this.activeEffects = new Map();
+        this.context = null;
+        this.gain = null;
+        this.effectGain = null;
+        this.captureDestination = null;
+        this.captureBgmGain = null;
+        this.captureEffectGain = null;
         this.bgmBuffer = null;
         this.bgmSource = null;
         this.bgmLoad = null;
@@ -6407,26 +6628,37 @@ class SoundManager {
         this.bgmOffset = this.bgmLoopStart;
         this.bgmStartedAt = 0;
         this.volume = 0.5;
-        this.gain?.connect(this.context.destination);
-        this.effectGain?.connect(this.context.destination);
-        if (this.captureDestination !== null) {
-            this.captureBgmGain?.connect(this.captureDestination);
-            this.captureEffectGain?.connect(this.captureDestination);
-        }
-        if (this.captureBgmGain !== null)
-            this.captureBgmGain.gain.value = EXPORT_AUDIO_VOLUME * BGM_VOLUME_RATIO;
-        if (this.captureEffectGain !== null)
-            this.captureEffectGain.gain.value = EXPORT_AUDIO_VOLUME;
+        this.wantsBgm = false;
+        this.capturing = false;
         for (const key of ["thunder", "setMagic", "item"]) {
             const audio = new Audio(soundPaths[key]);
             audio.preload = "auto";
             this.effects.set(key, audio);
         }
-        this.applyVolume();
     }
     setVolume(volume) {
-        this.volume = Math.max(0, Math.min(1, volume));
+        const nextVolume = Math.max(0, Math.min(1, volume));
+        if (nextVolume === this.volume)
+            return;
+        const wasMuted = this.volume === 0;
+        this.volume = nextVolume;
         this.applyVolume();
+        if (this.volume === 0 && !this.capturing)
+            this.silence();
+        else if (wasMuted && this.wantsBgm && !this.capturing)
+            this.start();
+    }
+    /** Keep the recorded soundtrack at a fixed level even when the player is muted. */
+    beginCapture() {
+        this.capturing = true;
+        // Resume during the export button's user gesture, before image loading awaits.
+        if (this.ensureContext())
+            void this.context.resume().catch(() => { });
+    }
+    endCapture() {
+        this.capturing = false;
+        if (this.volume === 0 || !this.wantsBgm)
+            this.silence();
     }
     /** Returns the current game audio stream for local video export. */
     captureAudioTrack() {
@@ -6436,16 +6668,23 @@ class SoundManager {
         return track?.clone() ?? null;
     }
     start() {
+        this.wantsBgm = true;
         void this.startAndWait();
     }
     /** Starts the BGM and waits until its capture node is connected. */
     async startAndWait() {
-        if (this.context === null || this.gain === null)
-            return false;
+        this.wantsBgm = true;
+        if (this.volume === 0 && !this.capturing)
+            return true;
         try {
+            if (!this.ensureContext())
+                return false;
+            const context = this.context;
             await this.loadBgm();
+            if (!this.wantsBgm || (this.volume === 0 && !this.capturing))
+                return true;
             if (this.bgmBuffer !== null && this.bgmSource === null) {
-                const source = this.context.createBufferSource();
+                const source = context.createBufferSource();
                 this.bgmLoopEnd = this.bgmBuffer.duration;
                 source.buffer = this.bgmBuffer;
                 source.loop = true;
@@ -6455,10 +6694,12 @@ class SoundManager {
                 if (this.captureBgmGain !== null)
                     source.connect(this.captureBgmGain);
                 this.bgmSource = source;
-                this.bgmStartedAt = this.context.currentTime;
+                this.bgmStartedAt = context.currentTime;
                 source.start(0, this.bgmOffset);
             }
-            await this.context.resume();
+            await context.resume();
+            if (!this.wantsBgm || (this.volume === 0 && !this.capturing))
+                this.silence();
             return true;
         }
         catch { /* Audio is optional and may be blocked by the browser. */
@@ -6466,6 +6707,13 @@ class SoundManager {
         }
     }
     stop() {
+        this.wantsBgm = false;
+        this.stopBgmSource();
+        this.bgmOffset = this.bgmLoopStart;
+        this.stopEffects();
+        void this.context?.suspend().catch(() => { });
+    }
+    stopBgmSource() {
         if (this.bgmSource !== null) {
             try {
                 this.bgmSource.stop();
@@ -6474,20 +6722,10 @@ class SoundManager {
             this.bgmSource.disconnect();
             this.bgmSource = null;
         }
-        this.bgmOffset = this.bgmLoopStart;
     }
     pause() {
-        if (this.context === null || this.bgmSource === null)
-            return;
-        const elapsed = this.context.currentTime - this.bgmStartedAt;
-        const duration = this.bgmLoopEnd - this.bgmLoopStart;
-        this.bgmOffset = this.bgmLoopStart + ((this.bgmOffset - this.bgmLoopStart + elapsed) % duration);
-        try {
-            this.bgmSource.stop();
-        }
-        catch { /* already stopped */ }
-        this.bgmSource.disconnect();
-        this.bgmSource = null;
+        this.wantsBgm = false;
+        this.silence();
     }
     resume() {
         this.start();
@@ -6514,24 +6752,37 @@ class SoundManager {
         return this.bgmLoad;
     }
     play(key) {
+        if (this.volume === 0 && !this.capturing)
+            return;
         const source = this.effects.get(key);
         if (source === undefined)
             return;
+        this.ensureContext();
         const audio = source.cloneNode(true);
         audio.volume = 1;
+        let mediaSource = null;
+        const disconnect = () => {
+            try {
+                mediaSource?.disconnect();
+            }
+            catch { /* already disconnected */ }
+            this.activeEffects.delete(audio);
+        };
+        this.activeEffects.set(audio, disconnect);
+        audio.addEventListener("ended", disconnect, { once: true });
+        audio.addEventListener("error", disconnect, { once: true });
         if (this.context !== null && this.effectGain !== null) {
             try {
-                const mediaSource = this.context.createMediaElementSource(audio);
+                mediaSource = this.context.createMediaElementSource(audio);
                 mediaSource.connect(this.effectGain);
                 if (this.captureEffectGain !== null)
                     mediaSource.connect(this.captureEffectGain);
-                const disconnect = () => { try {
-                    mediaSource.disconnect();
-                }
-                catch { /* already disconnected */ } };
-                audio.addEventListener("ended", disconnect, { once: true });
-                audio.addEventListener("error", disconnect, { once: true });
-                void this.context.resume();
+                const context = this.context;
+                void context.resume().then(() => {
+                    if ((this.volume === 0 && !this.capturing) || (!this.wantsBgm && this.activeEffects.size === 0)) {
+                        void context.suspend().catch(() => { });
+                    }
+                }).catch(() => { });
             }
             catch {
                 audio.volume = this.volume;
@@ -6540,7 +6791,46 @@ class SoundManager {
         else {
             audio.volume = this.volume;
         }
-        void audio.play().catch(() => { });
+        void audio.play().catch(disconnect);
+    }
+    ensureContext() {
+        if (this.context !== null)
+            return true;
+        if (typeof window === "undefined" || typeof AudioContext === "undefined")
+            return false;
+        const context = new AudioContext();
+        this.context = context;
+        this.gain = context.createGain();
+        this.effectGain = context.createGain();
+        this.captureDestination = context.createMediaStreamDestination();
+        this.captureBgmGain = context.createGain();
+        this.captureEffectGain = context.createGain();
+        this.gain.connect(context.destination);
+        this.effectGain.connect(context.destination);
+        this.captureBgmGain.connect(this.captureDestination);
+        this.captureEffectGain.connect(this.captureDestination);
+        this.captureBgmGain.gain.value = EXPORT_AUDIO_VOLUME * BGM_VOLUME_RATIO;
+        this.captureEffectGain.gain.value = EXPORT_AUDIO_VOLUME;
+        this.applyVolume();
+        return true;
+    }
+    silence() {
+        if (this.context !== null && this.bgmSource !== null) {
+            const duration = this.bgmLoopEnd - this.bgmLoopStart;
+            if (duration > 0) {
+                const elapsed = this.context.currentTime - this.bgmStartedAt;
+                this.bgmOffset = this.bgmLoopStart + ((this.bgmOffset - this.bgmLoopStart + elapsed) % duration);
+            }
+            this.stopBgmSource();
+        }
+        this.stopEffects();
+        void this.context?.suspend().catch(() => { });
+    }
+    stopEffects() {
+        for (const [audio, disconnect] of this.activeEffects) {
+            audio.pause();
+            disconnect();
+        }
     }
     applyVolume() {
         if (this.gain !== null)
@@ -6553,4 +6843,237 @@ class SoundManager {
 }
 exports.SoundManager = SoundManager;
 
-},{}]});
+},{}],
+54:[function(module,exports,require){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.tutorialTargetCell = exports.tutorialTargetSelector = exports.tutorialGuide = exports.tutorialWaitTurn = exports.tutorialToggleMode = exports.tutorialDirection = exports.nextTutorialLesson = exports.tutorialReadyForNext = exports.tutorialLesson = exports.createTutorial = void 0;
+const engine_1 = require("@voldecade/engine");
+const client_control_1 = require("../controls/client-control");
+const game_session_1 = require("./game-session");
+const idle = { move: "NONE", placeMagic: false };
+const enemyIdle = { kind: "individual", actions: [idle, idle] };
+const tutorialTerrain = () => Array.from({ length: 121 }, (_, index) => {
+    const row = Math.floor(index / 11);
+    const col = index % 11;
+    return row === 0 || row === 10 || col === 0 || col === 10 || row % 2 === 0 && col % 2 === 0 ? "HARD" : "FLOOR";
+});
+const scenario = (kind) => {
+    const session = (0, game_session_1.createGameSession)(0x7475746f);
+    const initial = session.run.controller.state;
+    const terrain = [...tutorialTerrain()];
+    const hiddenItems = Array.from({ length: 121 }, () => null);
+    if (kind === "opening") {
+        const cell = (0, engine_1.positionIndex)({ row: 1, col: 5 }, 11);
+        terrain[cell] = "SOFT";
+        hiddenItems[cell] = "POWER";
+    }
+    const playerPositions = kind === "final"
+        ? [{ row: 5, col: 6 }, { row: 1, col: 1 }]
+        : [{ row: 1, col: 1 }, { row: 1, col: 1 }];
+    const enemyPositions = kind === "final"
+        ? [{ row: 5, col: 4 }, { row: 5, col: 7 }]
+        : [{ row: 9, col: 9 }, { row: 9, col: 9 }];
+    const characters = initial.characters.map((character) => ({
+        ...character,
+        position: (character.id < 2 ? playerPositions[character.id] : enemyPositions[character.id - 2]),
+    }));
+    const state = {
+        ...initial,
+        turn: kind === "final" ? 7 : 0,
+        terrain,
+        hiddenItems,
+        visibleItems: Array.from({ length: 121 }, () => null),
+        characters,
+        magics: kind === "final" ? [{ id: 1, ownerId: 0, position: { row: 5, col: 5 }, power: 2, placedTurn: 0, detonateTurn: 8 }] : [],
+        nextMagicId: kind === "final" ? 2 : 1,
+        lastBlastCells: [],
+    };
+    const control = kind === "final"
+        ? { ...session.input.control, mode: "INDIVIDUAL" }
+        : session.input.control;
+    return {
+        ...session,
+        run: { ...session.run, controller: { ...session.run.controller, state } },
+        input: { control, draft: (0, game_session_1.freshDraft)(control.mode) },
+    };
+};
+const createTutorial = () => ({ session: scenario("opening"), phase: "move", feedback: null });
+exports.createTutorial = createTutorial;
+const tutorialLesson = (phase) => {
+    if (phase === "move" || phase === "move-done")
+        return 1;
+    if (phase === "place" || phase === "place-done")
+        return 2;
+    if (phase.startsWith("escape-") || phase === "wait" || phase.startsWith("item-"))
+        return 3;
+    if (phase === "final-wait" || phase === "final-done")
+        return 5;
+    return 4;
+};
+exports.tutorialLesson = tutorialLesson;
+const tutorialReadyForNext = (phase) => phase === "move-done" || phase === "place-done" || phase === "item-done" || phase === "mode-done";
+exports.tutorialReadyForNext = tutorialReadyForNext;
+const nextTutorialLesson = (tutorial) => {
+    switch (tutorial.phase) {
+        case "move-done": return { ...tutorial, phase: "place", feedback: null };
+        case "place-done": return { ...tutorial, phase: "escape-down-1", feedback: null };
+        case "item-done": return { session: scenario("mode"), phase: "toggle-individual", feedback: null };
+        case "mode-done": return { session: scenario("final"), phase: "final-wait", feedback: null };
+        default: return tutorial;
+    }
+};
+exports.nextTutorialLesson = nextTutorialLesson;
+const expectedDirection = (tutorial) => {
+    switch (tutorial.phase) {
+        case "move": return { direction: "RIGHT", placeMagic: false };
+        case "place": return { direction: "RIGHT", placeMagic: true };
+        case "escape-down-1":
+        case "escape-down-2": return { direction: "DOWN", placeMagic: false };
+        case "escape-right":
+        case "item-right": return { direction: "RIGHT", placeMagic: false };
+        case "item-up-1":
+        case "item-up-2": return { direction: "UP", placeMagic: false };
+        case "separate": return { direction: tutorial.session.input.control.selectedCharacterId === 0 ? "RIGHT" : "NONE", placeMagic: false };
+        case "rejoin": return { direction: tutorial.session.input.control.selectedCharacterId === 0 ? "NONE" : "RIGHT", placeMagic: false };
+        case "final-wait": return { direction: "NONE", placeMagic: false };
+        default: return null;
+    }
+};
+const resolvedSession = (session) => {
+    const intent = session.input.draft ?? (0, game_session_1.freshDraft)(session.input.control.mode, session.fusePreferences);
+    const result = (0, engine_1.resolveTurn)(session.run.controller.state, [intent, enemyIdle]);
+    const applied = (0, client_control_1.applyTurnResultToControlState)(session.input.control, intent, result.state);
+    const control = applied.mode === "INDIVIDUAL" ? { ...applied, selectedCharacterId: 0 } : applied;
+    return {
+        ...session,
+        run: { ...session.run, controller: { ...session.run.controller, state: result.state } },
+        input: { control, draft: (0, game_session_1.freshDraft)(control.mode, session.fusePreferences) },
+        events: result.events,
+        draftedCharacterIds: [],
+    };
+};
+const nextPhaseAfterTurn = (phase, events) => {
+    switch (phase) {
+        case "move": return events.some((event) => event.kind === "MOVED") ? "move-done" : phase;
+        case "place": return events.some((event) => event.kind === "MAGIC_PLACED") ? "place-done" : phase;
+        case "escape-down-1": return "escape-down-2";
+        case "escape-down-2": return "escape-right";
+        case "escape-right": return "wait";
+        case "wait": return events.some((event) => event.kind === "SOFT_DESTROYED") ? "item-right" : "wait";
+        case "item-right": return "item-up-1";
+        case "item-up-1": return "item-up-2";
+        case "item-up-2": return events.some((event) => event.kind === "ITEM_COLLECTED") ? "item-done" : phase;
+        case "separate": return "try-group";
+        case "rejoin": return "toggle-group";
+        case "final-wait": return events.some((event) => event.kind === "STAGE_CLEARED") ? "final-done" : phase;
+        default: return phase;
+    }
+};
+const tutorialDirection = (tutorial, direction, placeMagic) => {
+    const expected = expectedDirection(tutorial);
+    if (expected === null)
+        return { ...tutorial, feedback: "先に画面の案内に従ってください。" };
+    if (direction !== expected.direction || placeMagic !== expected.placeMagic) {
+        return { ...tutorial, feedback: "この課題では、案内に表示された操作を試してください。ターンは進んでいません。" };
+    }
+    if (!(0, game_session_1.isDirectionAvailable)(tutorial.session, direction, placeMagic)) {
+        return { ...tutorial, feedback: "その方向へは進めません。案内の操作を確認してください。" };
+    }
+    let session = (0, game_session_1.setDraftDirectionWithPlacement)(tutorial.session, direction, placeMagic);
+    if (!(0, game_session_1.quickDraftIsComplete)(session)) {
+        session = (0, game_session_1.selectNextUndraftedCharacter)(session);
+        return { ...tutorial, session, feedback: null };
+    }
+    session = resolvedSession(session);
+    const phase = nextPhaseAfterTurn(tutorial.phase, session.events);
+    return { session, phase, feedback: null };
+};
+exports.tutorialDirection = tutorialDirection;
+const tutorialToggleMode = (tutorial) => {
+    if (tutorial.phase === "try-group") {
+        try {
+            (0, game_session_1.changeControlMode)(tutorial.session, "GROUP");
+            return { ...tutorial, feedback: "2体が離れている間は、同時操作に戻れません。" };
+        }
+        catch {
+            return { ...tutorial, phase: "rejoin", feedback: "2体が生存し、同じマスにいる場合だけ同時操作に切り替えられます。ターンは進んでいません。" };
+        }
+    }
+    if (tutorial.phase !== "toggle-individual" && tutorial.phase !== "toggle-group") {
+        return { ...tutorial, feedback: "操作モードは、この後の課題で切り替えます。" };
+    }
+    const mode = tutorial.phase === "toggle-individual" ? "INDIVIDUAL" : "GROUP";
+    try {
+        const session = (0, game_session_1.changeControlMode)(tutorial.session, mode);
+        return { session, phase: tutorial.phase === "toggle-individual" ? "separate" : "mode-done", feedback: null };
+    }
+    catch {
+        return { ...tutorial, feedback: "2体が生存し、同じマスにいる場合だけ同時操作に切り替えられます。" };
+    }
+};
+exports.tutorialToggleMode = tutorialToggleMode;
+/** Advances one genuine engine turn while the player is safely away from the blast. */
+const tutorialWaitTurn = (tutorial) => {
+    if (tutorial.phase !== "wait")
+        return tutorial;
+    const session = resolvedSession(tutorial.session);
+    return { session, phase: nextPhaseAfterTurn("wait", session.events), feedback: null };
+};
+exports.tutorialWaitTurn = tutorialWaitTurn;
+const tutorialGuide = (tutorial) => {
+    const second = tutorial.session.input.control.selectedCharacterId === 1;
+    switch (tutorial.phase) {
+        case "move": return { title: "魔力球を置かずに移動", explanation: "2体を右へ1マス動かしましょう。", keyboard: "→ または D", buttons: "魔力球のない右ボタン" };
+        case "move-done": return { title: "移動できました", explanation: "今回は魔力球を置かずに1ターン進みました。", keyboard: "", buttons: "" };
+        case "place": return { title: "移動して魔力球を設置", explanation: "右へ動き、移動先に魔力球を置きましょう。", keyboard: "Shift＋→ または Shift＋D", buttons: "魔力球付きの右ボタン" };
+        case "place-done": return { title: "魔力球を置きました", explanation: "この魔力球は8ターン後に自然発動します。次は離れて安全な場所へ移動します。", keyboard: "", buttons: "" };
+        case "escape-down-1":
+        case "escape-down-2": return { title: "雷撃から離れよう", explanation: "下へ移動し、魔力球の縦方向の雷撃を避けましょう。", keyboard: "↓ または S", buttons: "魔力球のない下ボタン" };
+        case "escape-right": return { title: "安全なマスへ", explanation: "右へ移動すると雷撃の列から外れます。", keyboard: "→ または D", buttons: "魔力球のない右ボタン" };
+        case "wait": return { title: "発動まで進める", explanation: "安全な場所に着きました。「発動まで進める」で残りの待機ターンを自動で進めます。", keyboard: "Tab でボタンへ移動して Enter", buttons: "発動まで進める" };
+        case "item-right": return { title: "壁が壊れてアイテムが出現", explanation: "右へ移動してアイテムに近づきましょう。", keyboard: "→ または D", buttons: "魔力球のない右ボタン" };
+        case "item-up-1":
+        case "item-up-2": return { title: "火力アイテムを取ろう", explanation: "上へ進み、現れた火力アイテムを拾いましょう。", keyboard: "↑ または W", buttons: "魔力球のない上ボタン" };
+        case "item-done": return { title: "アイテムを取得しました", explanation: "キャラアイコン横の火力が2から3に増えました。重なった2体は両方取得します。", keyboard: "", buttons: "" };
+        case "toggle-individual": return { title: "2体を個別に操作", explanation: "新しい場面に切り替わりました。同じマスにいる2体を個別操作へ切り替えましょう。", keyboard: "C", buttons: "操作モード切替ボタン" };
+        case "separate": return { title: second ? "2体目を待機させる" : "1体目だけ右へ", explanation: second ? "2体目はその場で待機します。" : "個別操作では1体ずつ行動を決めます。まず1体目を右へ。", keyboard: second ? "X" : "→ または D", buttons: second ? "魔力球のない待機ボタン" : "魔力球のない右ボタン" };
+        case "try-group": return { title: "離れたまま切り替えてみよう", explanation: "2体が別のマスにいる状態で、同時操作への切替を試してください。", keyboard: "C", buttons: "操作モード切替ボタン" };
+        case "rejoin": return { title: second ? "2体目を1体目のマスへ" : "1体目は待機", explanation: second ? "2体を同じマスに戻しましょう。" : "まず1体目の待機を決めます。", keyboard: second ? "→ または D" : "X", buttons: second ? "魔力球のない右ボタン" : "魔力球のない待機ボタン" };
+        case "toggle-group": return { title: "同じマスなら同時操作へ", explanation: "合流した2体を同時操作に戻しましょう。", keyboard: "C", buttons: "操作モード切替ボタン" };
+        case "mode-done": return { title: "操作モードを覚えました", explanation: "別々のマスでは切り替えられず、同じマスに戻ると切り替えられます。", keyboard: "", buttons: "" };
+        case "final-wait": return { title: second ? "2体目も待機" : "1体目を待機", explanation: second ? "もう1体の行動を決めると、魔力球が発動します。" : "最後の場面に切り替わりました。盤面の魔力球はあと1ターンで発動します。まず1体目を待機させましょう。", keyboard: "X", buttons: "魔力球のない待機ボタン" };
+        case "final-done": return { title: "チュートリアル完了！", explanation: "味方は1体倒れましたが、敵は2体倒れました。生存数は味方1・敵0なのでステージクリアです。", keyboard: "Tab → Enter で終了ボタンを押せます", buttons: "ゲームを始める／もう一度" };
+    }
+};
+exports.tutorialGuide = tutorialGuide;
+const tutorialTargetSelector = (tutorial) => {
+    if ((0, exports.tutorialReadyForNext)(tutorial.phase))
+        return '[data-action="tutorial-next"]';
+    if (tutorial.phase === "wait")
+        return '[data-action="tutorial-fast-forward"]';
+    if (tutorial.phase === "final-done")
+        return '[data-action="tutorial-start-game"]';
+    if (tutorial.phase === "toggle-individual" || tutorial.phase === "try-group" || tutorial.phase === "toggle-group") {
+        return '[data-action="mode-toggle"]';
+    }
+    const expected = expectedDirection(tutorial);
+    return expected === null ? null : expected.placeMagic
+        ? `[data-magic-direction="${expected.direction}"]`
+        : `[data-direction="${expected.direction}"]`;
+};
+exports.tutorialTargetSelector = tutorialTargetSelector;
+const tutorialTargetCell = (phase) => {
+    if (phase === "move")
+        return { row: 1, col: 2 };
+    if (phase === "place" || phase === "place-done")
+        return { row: 1, col: 3 };
+    if (phase.startsWith("escape-") || phase === "wait" || phase === "item-right" || phase === "item-up-1" || phase === "item-up-2")
+        return { row: 1, col: 5 };
+    if (phase === "final-wait")
+        return { row: 5, col: 5 };
+    return null;
+};
+exports.tutorialTargetCell = tutorialTargetCell;
+
+},{"@voldecade/engine":5,"../controls/client-control":36,"./game-session":35}]});

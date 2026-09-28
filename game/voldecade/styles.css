@@ -133,9 +133,24 @@ body:has(.result-popup[open]) { overflow: hidden; }
 @keyframes online-spin { to { transform: rotate(360deg); } }
 .pause-panel { position: fixed; z-index: 5; inset: 0; display: grid; place-content: center; gap: .75rem; text-align: center; padding: 2rem; background: rgba(244,240,232,.96); }
 .pause-panel span { display: block; }
-.tutorial { position: fixed; z-index: 10; left: 50%; bottom: max(1rem, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(520px, calc(100% - 2rem)); border: 3px solid #172033; border-radius: 16px; padding: 1rem; background: #fff8d9; box-shadow: 8px 8px 0 #172033; }
-.tutorial h2, .tutorial p { margin: .35rem 0; }
-.tutorial button { float: right; }
+.tutorial-guide { max-width: 1180px; margin: 0 auto 1rem; padding: .75rem 1rem; border: 2px solid #172033; border-radius: 12px; background: #fff8d9; box-shadow: 4px 5px 0 rgba(23,32,51,.18); }
+.tutorial-header-restart, .tutorial-mobile-help { display: none; }
+.tutorial-guide h2, .tutorial-guide p { margin: .25rem 0; }
+.tutorial-guide-head { display: flex; align-items: baseline; gap: .75rem; }
+.tutorial-guide-head span { flex: none; color: #0d5c63; font-weight: 900; }
+.tutorial-guide h2 { font-size: clamp(1.1rem, 3vw, 1.45rem); }
+.tutorial-input-note { font-weight: 750; }
+.tutorial-inputs { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
+.tutorial-inputs span { padding: .15rem .4rem; border-radius: 5px; background: #fff; }
+.tutorial-selected { display: inline-flex; align-items: center; gap: .3rem; font-weight: 800; }
+.tutorial-selected img { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; }
+.tutorial-feedback { color: #8a2418; font-weight: 800; }
+.tutorial-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.tutorial-actions button { min-height: 44px; }
+.tutorial-screen .mode-row { grid-template-columns: 1fr; }
+.tutorial-target { outline: 4px solid #ffbf00 !important; outline-offset: 2px; }
+.tutorial-board-target { position: absolute; z-index: 4; border: 3px solid #ffbf00; border-radius: 8px; box-shadow: 0 0 0 2px #172033; pointer-events: none; }
+.tutorial-screen:has([data-tutorial-phase="item-done"]) .roster-character.team-0 .roster-items { outline: 3px solid #ffbf00; outline-offset: 2px; border-radius: 4px; }
 .score strong { display: block; font-size: 5rem; }
 .replay-list { padding: 0; list-style: none; }
 .replay-list li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid #aaa; padding: .6rem 0; }
@@ -175,6 +190,10 @@ textarea { width: 100%; padding: .75rem; border: 2px solid #172033; border-radiu
   .character-card { padding: .45rem; min-height: 70px; }
   .direction-pad button { min-width: 52px; min-height: 52px; padding: 0; }
   .legend { font-size: .7rem; }
+  .tutorial-guide { padding: .5rem .65rem; margin-bottom: .5rem; font-size: .82rem; }
+  .tutorial-guide-head { gap: .4rem; }
+  .tutorial-guide h2 { font-size: 1rem; }
+  .tutorial-inputs { gap: .15rem .5rem; }
 }
 @media (max-width: 380px) {
   .game-header { margin-bottom: .4rem; }
@@ -185,6 +204,54 @@ textarea { width: 100%; padding: .75rem; border: 2px solid #172033; border-radiu
   .game-screen .control-panel button { min-height: clamp(48px, 11vw, 108px); font-size: clamp(16px, 3.8vw, 34px); }
   .game-screen .direction-pad button { min-width: clamp(52px, 12vw, 118px); min-height: clamp(52px, 12vw, 118px); padding: 0; }
   .game-screen .control-button-icon { max-height: clamp(56px, 12vw, 118px); }
+}
+@media (orientation: portrait) and (max-width: 900px), (orientation: portrait) and (pointer: coarse) {
+  .tutorial-screen { display: flex; flex-direction: column; height: 100dvh; min-height: 0; overflow: hidden; padding: .35rem .5rem max(.4rem, env(safe-area-inset-bottom)); }
+  .tutorial-screen .account-badge { margin: 0 0 .15rem auto; padding: .1rem .4rem; font-size: .7rem; }
+  .tutorial-screen .game-header { flex: none; width: 100%; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: .25rem; margin-bottom: .25rem; }
+  .tutorial-screen .game-header button { min-height: 40px; padding: .25rem .4rem; font-size: .72rem; }
+  .tutorial-screen .tutorial-header-restart { display: block; }
+  .tutorial-screen .game-header div { min-width: 0; padding: .2rem .35rem; border-left-width: 3px; font-size: .7rem; }
+  .tutorial-screen .game-header div:first-of-type strong { display: none; }
+  .tutorial-screen .game-turn { min-width: 0; }
+  .tutorial-screen .tutorial-guide { position: relative; flex: none; width: 100%; margin-bottom: .3rem; padding: .3rem .5rem; font-size: .75rem; }
+  .tutorial-screen .tutorial-guide-head { align-items: center; gap: .35rem; }
+  .tutorial-screen .tutorial-guide-head > span { font-size: .7rem; }
+  .tutorial-screen .tutorial-guide h2 { min-width: 0; font-size: .9rem; line-height: 1.2; }
+  .tutorial-screen .tutorial-guide > p { margin: .15rem 0; line-height: 1.3; }
+  .tutorial-screen .tutorial-input-note { font-size: .7rem; }
+  .tutorial-screen .tutorial-inputs { display: none; }
+  .tutorial-screen .tutorial-mobile-help { display: block; flex: none; margin-left: auto; }
+  .tutorial-screen .tutorial-mobile-help summary { display: grid; place-items: center; min-height: 40px; padding: .2rem .4rem; border: 1px solid #172033; border-radius: 6px; background: #fff; font-size: .7rem; font-weight: 750; cursor: pointer; list-style: none; }
+  .tutorial-screen .tutorial-mobile-help summary::-webkit-details-marker { display: none; }
+  .tutorial-screen .tutorial-mobile-help-content { position: absolute; z-index: 6; top: calc(100% - 2px); right: .4rem; width: min(300px, calc(100vw - 1.6rem)); padding: .45rem .6rem; border: 2px solid #172033; border-radius: 8px; background: #fff; box-shadow: 3px 4px 0 #1720334d; }
+  .tutorial-screen .tutorial-mobile-help-content p { margin: .15rem 0; }
+  .tutorial-screen .tutorial-actions { gap: .3rem; margin-top: .2rem; }
+  .tutorial-screen .tutorial-actions [data-action="tutorial-restart"] { display: none; }
+  .tutorial-screen .play-layout { flex: 1 1 auto; min-height: 0; width: 100%; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: .3rem; overflow: hidden; }
+  .tutorial-screen .board-panel { min-height: 0; height: 100%; grid-template-columns: minmax(0, 1fr) 98px; gap: .2rem; padding: .25rem; overflow: hidden; container-type: size; }
+  .tutorial-screen .sprite-board { width: min(100%, 100cqh); aspect-ratio: 1; align-self: center; justify-self: center; }
+  .tutorial-screen .sprite-roster { align-self: center; gap: .12rem; }
+  .tutorial-screen .roster-character { padding: .1rem; gap: .1rem; }
+  .tutorial-screen .roster-heading > img { width: 28px; height: 28px; }
+  .tutorial-screen .roster-items { font-size: .62rem; }
+  .tutorial-screen .roster-items img { width: 12px; height: 12px; }
+  .tutorial-screen .roster-volume { font-size: .62rem; }
+  .tutorial-screen .control-panel { gap: .25rem; padding: .3rem; }
+  .tutorial-screen .quick-help { display: none; }
+  .tutorial-screen.tutorial-complete { height: auto; min-height: 100dvh; overflow: visible; }
+  .tutorial-screen.tutorial-complete .play-layout { overflow: visible; }
+  .tutorial-screen.tutorial-complete .board-panel { min-height: 180px; }
+}
+@media (orientation: portrait) and (min-width: 370px) and (max-width: 380px) {
+  .tutorial-screen .pad-row { grid-template-columns: 1fr 1fr; }
+}
+@media (orientation: portrait) and (max-width: 369px), (orientation: portrait) and (max-height: 580px) {
+  .tutorial-screen { height: auto; min-height: 100dvh; overflow: visible; }
+  .tutorial-screen .play-layout { display: block; overflow: visible; }
+  .tutorial-screen .board-panel { height: auto; container-type: normal; }
+  .tutorial-screen .sprite-board { width: 100%; }
+  .tutorial-screen .control-panel { margin-top: .3rem; }
 }
 @media (orientation: landscape) and (max-height: 600px) {
   .game-header { margin-bottom: .4rem; }
