@@ -2169,8 +2169,8 @@ const resolveCampaignTurn = (controller, playerIntent, enemyIntent) => {
     const stageChanged = cleared && turnResult.state.outcome.kind === "ONGOING";
     const previousScore = controller.score ?? emptyScore();
     const defeated = turnResult.events.filter((event) => event.kind === "CHARACTER_DEFEATED");
-    const pendingEnemyDefeated = previousScore.pendingEnemyDefeated + defeated.filter((event) => event.characterId < 2).length;
-    const pendingPlayerDefeated = previousScore.pendingPlayerDefeated + defeated.filter((event) => event.characterId >= 2).length;
+    const pendingEnemyDefeated = previousScore.pendingEnemyDefeated + defeated.filter((event) => event.characterId >= 2).length;
+    const pendingPlayerDefeated = previousScore.pendingPlayerDefeated + defeated.filter((event) => event.characterId < 2).length;
     const score = cleared
         ? { clearedStages: previousScore.clearedStages + 1, turnsToLastClear: turnResult.state.turn, enemyDefeated: previousScore.enemyDefeated + pendingEnemyDefeated, playerDefeated: previousScore.playerDefeated + pendingPlayerDefeated, pendingEnemyDefeated: 0, pendingPlayerDefeated: 0 }
         : { ...previousScore, pendingEnemyDefeated, pendingPlayerDefeated };
